@@ -198,6 +198,15 @@ sudo bash install.sh
 
 The bootstrap script extracts `wpsc.tar.gz` into a temporary directory and runs the full installer included in the bundle. You only need to download these two files; `install_webpanel.sh` is already in the archive.
 
+### Secure the installation
+Before using the panel, configure a private random session secret. The application has a fallback secret for development; do not use that default on a server. Add this once after installation:
+```bash
+python3 -c 'import secrets; print("WEBPANEL_SECRET=" + secrets.token_hex(32))' | sudo tee -a /etc/webpanel.env >/dev/null
+sudo chmod 600 /etc/webpanel.env
+sudo systemctl restart webpanel
+```
+Keep `/etc/webpanel.env` private and preserve the generated secret when updating the server. If this file already contains settings, the command appends the secret without replacing them. Changing the secret later invalidates existing login sessions.
+
 To install from a downloaded GitHub release instead, download its `install.sh` and `wpsc.tar.gz` assets into the same directory and run:
 ```bash
 sudo bash install.sh
