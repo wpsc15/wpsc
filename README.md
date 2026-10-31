@@ -1,6 +1,6 @@
 # 🌐 WebPanel — Linux Web Hosting Control Panel
 
-A lightweight, modern web-based hosting control panel for Linux servers designed similarly to **aaPanel**. Built with **FastAPI**, **Alpine.js**, **Tailwind CSS**, and **Chart.js** to manage **Apache**, **MySQL / MariaDB**, **PHP**, and **phpMyAdmin** directly through a browser.
+A lightweight, modern web-based hosting control panel for Linux servers built for Linux server management. Built with **FastAPI**, **Alpine.js**, **Tailwind CSS**, and **Chart.js** to manage **Apache**, **MySQL / MariaDB**, **PHP**, and **phpMyAdmin** directly through a browser.
 
 ---
 
@@ -255,7 +255,7 @@ Keep pull requests focused, avoid including secrets, server data, `.venv`, or `w
 
 ### License
 
-The repository is publicly viewable, but it does not currently include a `LICENSE` file. Public visibility alone does not grant permission to redistribute or reuse the code. A project maintainer should add an explicit license before the project is described as open source.
+This project is licensed under the GNU GPL v3.0. See [LICENSE](./LICENSE) for the full license text.
 
 
 ---
