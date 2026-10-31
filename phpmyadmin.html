@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}phpMyAdmin{% endblock %}
+{% block heading %}<span><i class="fas fa-table-columns" style="color:#fbbf24;margin-right:8px"></i>phpMyAdmin</span>{% endblock %}
+{% block content %}
+<div style="display:grid;gap:16px;max-width:1100px">
+    {% if flash %}<div style="padding:12px;border-radius:6px;background:{% if flash.type == 'error' %}#450a0a{% else %}#064e3b{% endif %};color:{% if flash.type == 'error' %}#fca5a5{% else %}#a7f3d0{% endif %}">{{ flash.msg }}</div>{% endif %}
+    <section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:10px">Installation status</h2>
+        <p style="font-size:13px;color:#9ca3af">Status: <strong style="color:{% if pma.installed %}#34d399{% else %}#fbbf24{% endif %}">{% if pma.installed %}Installed{% else %}Not installed{% endif %}</strong></p>
+        {% if pma.installed %}
+        <p style="font-size:12px;color:#9ca3af;margin-top:6px">Files: {{ pma.path }}</p>
+        <div style="padding:12px;margin-top:12px;border:1px solid #374151;border-radius:6px;background:#030712;color:#d1d5db;font-size:12px;line-height:1.6">
+            <strong>Ubuntu root-login error (HY000/1698)?</strong> MySQL root commonly authenticates through the local Unix socket, which phpMyAdmin cannot use with a password. Do not change root authentication. Sign in with a named MySQL account instead; create one on the <a href="/mysql#credentials" style="color:#93c5fd">MySQL page</a> and use its generated password in both phpMyAdmin and MySQL clients. Select one database for limited access, or explicitly choose full MySQL administrator access if you need server-wide control. Existing database passwords cannot be retrieved.
+        </div>
+        <a href="/mysql#credentials" style="display:inline-block;margin-top:12px;padding:8px 11px;background:#374151;color:#bfdbfe;border-radius:6px;text-decoration:none;font-size:12px">Create phpMyAdmin database login</a>
+        {% if pma.apache_available %}
+        <p style="font-size:12px;color:#9ca3af;margin-top:6px">Apache configuration: {% if pma.apache_enabled %}enabled{% else %}disabled{% endif %}</p>
+        <form method="post" action="/php/phpmyadmin/toggle" style="margin-top:14px">
+            <input type="hidden" name="action" value="{% if pma.apache_enabled %}disable{% else %}enable{% endif %}">
+            <button type="submit" onclick="return confirm('Change phpMyAdmin Apache exposure?');" style="padding:8px 12px;background:#2563eb;color:white;border:0;border-radius:6px;cursor:pointer">{% if pma.apache_enabled %}Disable Apache access{% else %}Enable Apache access{% endif %}</button>
+        </form>
+        {% endif %}
+        {% if pma.apache_enabled %}<a href="{{ phpmyadmin_url }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;padding:9px 14px;background:#2563eb;color:white;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Open phpMyAdmin</a>{% endif %}
+        <p style="margin-top:12px"><a href="/php/phpmyadmin/config" style="color:#93c5fd">Edit phpMyAdmin configuration</a></p>
+        {% else %}
+        <p style="font-size:13px;color:#9ca3af;margin-top:8px">Choose a package version on the installer page to install phpMyAdmin. The package installer will configure Apache when available.</p>
+        <a href="/stack" style="display:inline-block;margin-top:12px;padding:8px 12px;background:#2563eb;color:white;border-radius:6px;text-decoration:none">Open package installer</a>
+        {% endif %}
+    </section>
+    {% if config_path or config_error %}
+    <section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h2 style="font-size:15px;font-weight:600;margin-bottom:8px">phpMyAdmin configuration</h2>
+        {% if config_path %}<p style="font-size:12px;color:#9ca3af;margin-bottom:12px">{{ config_path }}</p>{% endif %}
+        {% if config_error %}<div style="padding:12px;background:#450a0a;color:#fca5a5;border-radius:6px">{{ config_error }}</div>
+        {% else %}
+        <div style="padding:12px;margin-bottom:12px;border:1px solid #78350f;border-radius:6px;background:#451a03;color:#fcd34d;font-size:12px;line-height:1.6">
+            <strong>Warning:</strong> This is a root-owned PHP configuration that can change database access and authentication. Review carefully. A backup is created and PHP syntax is checked before saving.
+        </div>
+        <form method="post" action="/php/phpmyadmin/config" onsubmit="return confirm('Save this phpMyAdmin configuration? A backup will be created.');">
+            <textarea name="config" required spellcheck="false" style="width:100%;min-height:55vh;background:#030712;border:1px solid #374151;border-radius:8px;padding:16px;color:#d1d5db;font:12px/1.6 monospace;tab-size:4">{{ config }}</textarea>
+            <button type="submit" style="margin-top:12px;padding:9px 16px;border:0;border-radius:6px;background:#2563eb;color:white;font-weight:600;cursor:pointer">Validate and save</button>
+        </form>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Activity Log{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-clipboard-list" style="color:#26a65b;font-size:16px"></i>
+    Activity Log
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="service-manager">
+    <section class="service-manager-intro">
+        <div>
+            <h2>Administrative activity</h2>
+            <p>Recent sign-ins and management actions recorded by WebPanel.</p>
+        </div>
+        {% if entries %}
+        <div class="audit-heading-actions">
+            <div class="service-manager-count"><strong id="audit-count">{{ entries|length }}</strong><span>Events on this page</span></div>
+            <form method="post" action="/audit/clear" onsubmit="return confirm('Delete all recorded activity history? This cannot be undone.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="service-action" type="submit" title="Delete all stored activity history.">
+                    <i class="fas fa-trash"></i>Clear activity log
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if flash %}
+    <div class="service-manager-notice {% if flash.type == 'error' %}service-manager-error{% endif %}">{{ flash.msg }}</div>
+    {% endif %}
+
+    {% if error %}
+    <div class="service-manager-notice service-manager-error"><i class="fas fa-triangle-exclamation"></i>{{ error }}</div>
+    {% else %}
+    <section class="cron-job-list">
+        {% if entries %}
+        <div class="cron-table-wrap">
+            <table class="cron-table audit-table" id="audit-table">
+                <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th><th>IP address</th></tr></thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr>
+                        <td>{{ entry.created_at }}</td>
+                        <td>{{ entry.user }}</td>
+                        <td><code>{{ entry.action }}</code></td>
+                        <td class="audit-detail">{{ entry.detail }}</td>
+                        <td><code>{{ entry.ip }}</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="cron-empty">No activity has been recorded yet.</div>
+        {% endif %}
+        <nav class="audit-pagination" aria-label="Audit log pages">
+            {% if page > 1 %}<a href="/audit?page={{ page - 1 }}">← Newer</a>{% else %}<span></span>{% endif %}
+            <span>Page {{ page }} of {{ pages }}</span>
+            {% if page < pages %}<a href="/audit?page={{ page + 1 }}">Older →</a>{% else %}<span></span>{% endif %}
+        </nav>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

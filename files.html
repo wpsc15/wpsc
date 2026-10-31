@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}File Manager{% endblock %}
+{% block heading %}<span><i class="fas fa-folder-open" style="color:#3b82f6;margin-right:8px"></i>File Manager</span>{% endblock %}
+{% block content %}
+<div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+            <h2 style="font-size:15px;font-weight:600">Web root: {{ web_root }}</h2>
+            <div style="font-size:12px;color:#9ca3af;margin-top:5px">Current directory: {{ web_root }}{% if path %}/{{ path }}{% endif %}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <form method="post" action="/files/mkdir" style="display:flex;gap:6px">
+                <input type="hidden" name="path" value="{{ path }}">
+                <input name="name" placeholder="New folder" maxlength="255" required style="padding:8px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+                <button type="submit" style="padding:8px 12px;background:#2563eb;color:white;border:0;border-radius:6px;cursor:pointer">Create folder</button>
+            </form>
+            <form method="post" action="/files/upload" enctype="multipart/form-data" style="display:flex;gap:6px">
+                <input type="hidden" name="path" value="{{ path }}">
+                <input type="file" name="upload" required style="max-width:230px;padding:6px;background:#030712;color:#d1d5db;border:1px solid #374151;border-radius:6px">
+                <button type="submit" style="padding:8px 12px;background:#065f46;color:#a7f3d0;border:1px solid #047857;border-radius:6px;cursor:pointer">Upload</button>
+            </form>
+        </div>
+    </div>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:12px">Uploads are limited to 10 MiB. Symlinks are blocked; directories must be empty before deletion.</div>
+    <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;text-align:left">
+            <thead><tr style="font-size:11px;color:#6b7280;text-transform:uppercase">
+                <th style="padding:10px;border-bottom:1px solid #1f2937">Name</th>
+                <th style="padding:10px;border-bottom:1px solid #1f2937">Type</th>
+                <th style="padding:10px;border-bottom:1px solid #1f2937">Size</th>
+                <th style="padding:10px;border-bottom:1px solid #1f2937">Actions</th>
+            </tr></thead>
+            <tbody>
+                {% if path %}
+                {% set parent = path.rsplit('/', 1)[0] if '/' in path else '' %}
+                <tr><td colspan="4" style="padding:10px;border-bottom:1px solid #1f2937"><a href="/files?path={{ parent|urlencode }}" style="color:#60a5fa;text-decoration:none">.. (parent directory)</a></td></tr>
+                {% endif %}
+                {% for entry in entries %}
+                {% set item_path = path ~ '/' ~ entry.name if path else entry.name %}
+                <tr>
+                    <td style="padding:10px;border-bottom:1px solid #1f2937">
+                        {% if entry.is_symlink %}<span style="color:#fbbf24"><i class="fas fa-link"></i> {{ entry.name }} (blocked symlink)</span>
+                        {% elif entry.is_hardlink %}<span style="color:#fbbf24">{{ entry.name }} (blocked hard link)</span>
+                        {% elif entry.is_dir %}<a href="/files?path={{ item_path|urlencode }}" style="color:#93c5fd;text-decoration:none"><i class="fas fa-folder" style="color:#fbbf24;margin-right:6px"></i>{{ entry.name }}/</a>
+                        {% elif entry.is_file %}<span style="color:#d1d5db"><i class="fas fa-file" style="color:#9ca3af;margin-right:6px"></i>{{ entry.name }}</span>
+                        {% else %}<span style="color:#fbbf24">{{ entry.name }} (unsupported filesystem entry)</span>{% endif %}
+                    </td>
+                    <td style="padding:10px;border-bottom:1px solid #1f2937;color:#9ca3af;font-size:12px">{% if entry.is_symlink %}Symlink{% elif entry.is_hardlink %}Hard link{% elif entry.is_dir %}Directory{% elif entry.is_file %}File{% else %}Unsupported{% endif %}</td>
+                    <td style="padding:10px;border-bottom:1px solid #1f2937;color:#9ca3af;font-size:12px">{% if entry.is_file and not entry.is_hardlink %}{{ entry.size }} B{% else %}—{% endif %}</td>
+                    <td style="padding:10px;border-bottom:1px solid #1f2937">
+                        {% if not entry.is_symlink and not entry.is_hardlink and (entry.is_dir or entry.is_file) %}
+                        <div style="display:flex;gap:12px">
+                            {% if entry.is_file %}
+                            <a href="/files/download?path={{ item_path|urlencode }}" title="Download" style="color:#60a5fa"><i class="fas fa-download"></i></a>
+                            <a href="/files?path={{ path|urlencode }}&edit={{ item_path|urlencode }}" title="Edit UTF-8 text file" style="color:#a78bfa"><i class="fas fa-pen"></i></a>
+                            {% endif %}
+                            <form method="post" action="/files/delete" onsubmit="return confirm('Delete this item? Directories must be empty.')">
+                                <input type="hidden" name="path" value="{{ item_path }}">
+                                <button type="submit" title="Delete" style="background:transparent;border:0;color:#f87171;cursor:pointer"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="padding:20px;text-align:center;color:#6b7280">This directory is empty.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% if edit_path %}
+<section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+    <h2 style="font-size:15px;font-weight:600;margin-bottom:12px">Editing: {{ edit_path }}</h2>
+    <form method="post" action="/files/save">
+        <input type="hidden" name="path" value="{{ edit_path }}">
+        <textarea name="content" spellcheck="false" style="width:100%;min-height:380px;padding:12px;background:#030712;color:#d1d5db;border:1px solid #374151;border-radius:6px;font-family:monospace;font-size:13px">{{ content }}</textarea>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+            <a href="/files?path={{ path|urlencode }}" style="padding:9px 14px;color:#d1d5db;text-decoration:none">Cancel</a>
+            <button type="submit" style="padding:9px 14px;background:#2563eb;color:white;border:0;border-radius:6px;cursor:pointer">Save file</button>
+        </div>
+    </form>
+</section>
+{% endif %}
+{% endblock %}

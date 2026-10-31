@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Server Logs{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-file-lines" style="color:#26a65b;font-size:16px"></i>
+    Server Logs
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="service-manager">
+    <section class="service-manager-intro">
+        <div>
+            <h2>System journal</h2>
+            <p>Inspect the latest 200 log lines from supported services. Clearing deletes the system journal and dedicated log files for the selected service; shared syslog files are left unchanged.</p>
+        </div>
+    </section>
+
+    {% if error %}
+    <div class="service-manager-notice service-manager-error"><i class="fas fa-triangle-exclamation"></i>{{ error }}</div>
+    {% endif %}
+    {% if flash %}
+    <div class="service-manager-notice {% if flash.type == 'error' %}service-manager-error{% endif %}">{{ flash.msg }}</div>
+    {% endif %}
+
+    {% if services %}
+    <form class="logs-filter" method="get" action="/logs">
+        <label for="log-unit">Service</label>
+        <select id="log-unit" name="unit" required>
+            <option value="">Select a service</option>
+            {% for service in services %}
+            <option value="{{ service.unit }}" {% if selected_unit == service.unit %}selected{% endif %}>{{ service.name }} ({{ service.unit }})</option>
+            {% endfor %}
+        </select>
+        <button class="service-action service-action-start" type="submit"><i class="fas fa-magnifying-glass"></i>View logs</button>
+    </form>
+    {% endif %}
+
+    {% if selected_unit and not error %}
+    <section class="logs-output-card">
+        <div class="logs-output-heading">
+            <strong><i class="fas fa-terminal"></i> {{ selected_unit }}</strong>
+            <div class="logs-output-actions">
+                <span>Last 200 lines</span>
+                <form method="post" action="/logs/clear" onsubmit="return confirm('Delete existing journal history for all services and dedicated log files for {{ selected_unit }}? Shared syslog files will remain unchanged. This cannot be undone.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="unit" value="{{ selected_unit }}">
+                    <button class="service-action" type="submit" title="Delete the system journal and dedicated log files for the selected service.">
+                        <i class="fas fa-trash"></i>Clear logs
+                    </button>
+                </form>
+            </div>
+        </div>
+        <pre class="logs-output" id="logs-output">{% if log_output %}{{ log_output }}{% else %}No log entries were returned for this service.{% endif %}</pre>
+    </section>
+    {% elif not error and not services %}
+    <section class="service-manager-empty">
+        <i class="fas fa-file-circle-question"></i>
+        <h3>No supported services detected</h3>
+        <p>Install a supported system service to view its journal here.</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}PHP {{ selected }} Settings{% endblock %}
+{% block heading %}<span><i class="fab fa-php" style="color:#7b68a6;margin-right:8px"></i>PHP Settings</span>{% endblock %}
+{% block content %}
+<style>
+    .php-manager{display:grid;grid-template-columns:205px minmax(0,1fr);min-height:570px;overflow:hidden;border:1px solid #e4e8eb;border-radius:8px;background:#fff;color:#2d3740}
+    .php-sidebar{padding:14px 0;border-right:1px solid #e6eaed;background:#f7f8f9}
+    .php-side-title{padding:0 16px 13px;color:#859099;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    .php-side-link{display:block;padding:9px 16px;border-left:3px solid transparent;color:#4f5c64;font-size:12px;text-decoration:none}
+    .php-side-link:hover{background:#edf4ef;color:#168b45}
+    .php-side-link.active{border-left-color:#26a65b;background:#eaf5ee;color:#168b45;font-weight:600}
+    .php-main{min-width:0;padding:19px}
+    .php-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+    .php-header h2{margin:0 0 5px;font-size:16px}
+    .php-muted{color:#7f8b91;font-size:11px;line-height:1.55}
+    .php-status{padding:5px 9px;border-radius:20px;background:#edf7f0;color:#168b45;font-size:11px;font-weight:600}
+    .php-flash,.php-info-box{margin-bottom:13px;padding:10px 12px;border:1px solid #e5e9eb;border-radius:5px;background:#f8fafb;font-size:11px;line-height:1.5}
+    .php-flash.success{border-color:#d6ebdc;background:#f1faf3;color:#168b45}
+    .php-flash.error,.php-error{border-color:#f0dfc0;background:#fff9ed;color:#966617}
+    .php-info-box{border-color:#dcebf6;background:#f3f9fd;color:#46667b}
+    .php-actions,.php-form-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .php-form{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
+    .php-btn{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 10px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#394850;font-size:11px;text-decoration:none;cursor:pointer}
+    .php-btn.primary{border-color:#26a65b;background:#26a65b;color:#fff}
+    .php-btn:disabled{opacity:.55;cursor:not-allowed}
+    .php-input,.php-select{min-height:32px;padding:6px 8px;border:1px solid #d9e0e3;border-radius:4px;background:#fff;color:#34434a;font-size:11px}
+    .php-input{width:min(310px,100%)}
+    .php-version{width:auto}
+    .php-card{padding:14px;border:1px solid #e5e9eb;border-radius:6px;background:#fff}
+    .php-card h3{margin:0 0 12px;font-size:13px}
+    .php-settings{display:grid;grid-template-columns:minmax(150px,1fr) minmax(160px,1fr) auto;align-items:center;gap:9px 12px}
+    .php-settings label{font-size:11px;color:#526068}
+    .php-setting-help{grid-column:1/-1;color:#859099;font-size:10px}
+    .php-table{width:100%;border-collapse:collapse}
+    .php-table th,.php-table td{padding:9px;border-bottom:1px solid #edf0f1;text-align:left;font-size:11px}
+    .php-table th{color:#78848a;font-weight:600}
+    .php-module{color:#2d3740;font-weight:600}
+    .php-code{max-height:520px;overflow:auto;margin:0;padding:13px;border:1px solid #e3e8ea;border-radius:5px;background:#f7f9fa;color:#37454d;font:11px/1.55 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+    .php-editor{width:100%;min-height:55vh;padding:12px;border:1px solid #d9e0e3;border-radius:5px;background:#fbfcfd;color:#263238;font:11px/1.55 Consolas,monospace;tab-size:4}
+    @media(max-width:760px){.php-manager{grid-template-columns:1fr}.php-sidebar{display:flex;overflow:auto;border-right:0;border-bottom:1px solid #e6eaed;padding:8px}.php-side-title{display:none}.php-side-link{flex:none;padding:8px;border:0;border-radius:4px}.php-side-link.active{border:0}.php-main{padding:13px}.php-settings{grid-template-columns:1fr}.php-setting-help{grid-column:auto}}
+</style>
+
+{% macro setting_form(section_key, setting_key, label, value, input_type="text", help="") -%}
+<form class="php-form php-setting-form" method="post" action="/php/save-setting">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="version" value="{{ selected }}">
+    <input type="hidden" name="section" value="{{ section_key }}">
+    <input type="hidden" name="key" value="{{ setting_key }}">
+    <div class="php-settings">
+        <label for="setting-{{ setting_key|replace('.', '-') }}">{{ label }}</label>
+        <input class="php-input" id="setting-{{ setting_key|replace('.', '-') }}" name="value" type="{{ input_type }}" value="{{ value }}">
+        <button class="php-btn primary" type="submit">Save and restart</button>
+        {% if help %}<span class="php-setting-help">{{ help }}</span>{% endif %}
+    </div>
+</form>
+{%- endmacro %}
+
+<div class="php-manager">
+    <nav class="php-sidebar" aria-label="PHP settings">
+        <div class="php-side-title">PHP {{ selected }} settings</div>
+        {% for key, label in sections %}
+        <a class="php-side-link {{ 'active' if section == key else '' }}" href="/php?version={{ selected }}&section={{ key }}">{{ label }}</a>
+        {% endfor %}
+    </nav>
+    <main class="php-main">
+        {% if flash %}<div class="php-flash {{ flash.type }}">{{ flash.msg }}</div>{% endif %}
+        <header class="php-header">
+            <div>
+                <h2>{{ dict(sections)[section] }}{% if selected %} · PHP {{ selected }}{% endif %}</h2>
+                <div class="php-muted">Default PHP: {{ current }} · Select an installed version to manage its PHP-FPM service and configuration.</div>
+            </div>
+            <form method="get" action="/php" class="php-form">
+                <input type="hidden" name="section" value="{{ section }}">
+                <label class="php-muted" for="php-version">Version</label>
+                <select class="php-select php-version" id="php-version" name="version" onchange="this.form.submit()">
+                    {% for version in versions %}<option value="{{ version }}" {{ 'selected' if version == selected else '' }}>PHP {{ version }}</option>{% endfor %}
+                </select>
+            </form>
+        </header>
+
+        {% if not versions %}
+        <div class="php-info-box">No PHP-FPM versions detected. Install PHP from the <a href="/stack">App Store</a>.</div>
+        {% elif section_error %}
+        <div class="php-flash error">{{ section_error }}</div>
+        {% elif section == 'service' %}
+        <section class="php-card">
+            <h3>PHP-FPM service</h3>
+            <p class="php-muted">Service: <code>php{{ selected }}-fpm</code> · Current status: <strong>{{ fpm_status }}</strong></p>
+            <div class="php-actions">
+                {% for action in ['start', 'stop', 'restart', 'reload'] %}
+                <form method="post" action="/php/service-action" onsubmit="return confirm('{{ action|capitalize }} PHP {{ selected }} FPM?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="version" value="{{ selected }}">
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <button class="php-btn {{ 'primary' if action == 'restart' else '' }}" type="submit">{{ action|capitalize }}</button>
+                </form>
+                {% endfor %}
+            </div>
+            <div class="php-info-box" style="margin-top:14px;margin-bottom:0">Run this version explicitly with <code>php{{ selected }}</code>. The App Store version selector lets you install additional supported PHP branches.</div>
+        </section>
+        {% elif section == 'extensions' %}
+        <section class="php-card">
+            <h3>Extensions available for PHP {{ selected }}</h3>
+            <p class="php-muted">Only extension packages available from the server's configured apt repositories are offered.</p>
+            <div style="overflow-x:auto">
+                <table class="php-table"><thead><tr><th>Extension</th><th>Package</th><th>Status</th><th>Action</th></tr></thead><tbody>
+                    {% for extension in extensions %}
+                    <tr><td class="php-module">{{ extension.name }}</td><td><code>{{ extension.package }}</code></td>
+                        <td>{{ 'Installed' if extension.installed else ('Available' if extension.available else 'Unavailable') }}</td>
+                        <td>{% if extension.available and not extension.installed %}
+                            <form method="post" action="/php/install-extension" onsubmit="return confirm('Install {{ extension.package }} and restart PHP-FPM?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="version" value="{{ selected }}"><input type="hidden" name="extension" value="{{ extension.name }}">
+                                <button class="php-btn primary" type="submit">Install</button>
+                            </form>
+                            {% else %}<span class="php-muted">—</span>{% endif %}
+                        </td></tr>
+                    {% endfor %}
+                </tbody></table>
+            </div>
+        </section>
+        {% elif section == 'configuration' %}
+        <section class="php-card"><h3>Common PHP configuration</h3><div style="display:grid;gap:14px">
+            {{ setting_form('configuration', 'memory_limit', 'Memory limit', ini_settings['memory_limit'], help='Maximum memory a PHP script may allocate, for example 256M.') }}
+            {{ setting_form('configuration', 'date.timezone', 'Default time zone', ini_settings['date.timezone'], help='PHP timezone identifier, for example UTC or Asia/Kolkata.') }}
+            {{ setting_form('configuration', 'display_errors', 'Display errors', ini_settings['display_errors']) }}
+            {{ setting_form('configuration', 'error_reporting', 'Error reporting expression', ini_settings['error_reporting']) }}
+        </div></section>
+        {% elif section == 'limit-upload' %}
+        <section class="php-card"><h3>Upload limits</h3><div style="display:grid;gap:14px">
+            {{ setting_form('limit-upload', 'upload_max_filesize', 'Maximum uploaded file size', ini_settings['upload_max_filesize'], help='Use a value such as 32M. post_max_size should be at least as large.') }}
+            {{ setting_form('limit-upload', 'post_max_size', 'Maximum POST body size', ini_settings['post_max_size']) }}
+            {{ setting_form('limit-upload', 'max_file_uploads', 'Maximum files per request', ini_settings['max_file_uploads']) }}
+        </div></section>
+        {% elif section == 'limit-timeout' %}
+        <section class="php-card"><h3>Execution time limits</h3><div style="display:grid;gap:14px">
+            {{ setting_form('limit-timeout', 'max_execution_time', 'Maximum script execution time (seconds)', ini_settings['max_execution_time']) }}
+            {{ setting_form('limit-timeout', 'max_input_time', 'Maximum input parsing time (seconds)', ini_settings['max_input_time']) }}
+        </div></section>
+        {% elif section == 'config-file' %}
+        <section class="php-card"><h3>PHP configuration file</h3>
+            <p class="php-muted">Loaded configuration: <code>{{ ini_path }}</code></p>
+            <div class="php-info-box">A backup is created before saving. PHP syntax is checked and PHP-FPM restarts; if validation or restart fails, the original file is restored.</div>
+            <form method="post" action="/php/save-config" onsubmit="return confirm('Validate and save php.ini, then restart PHP-FPM?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="version" value="{{ selected }}">
+                <textarea class="php-editor" name="config" required spellcheck="false">{{ ini_content }}</textarea>
+                <button class="php-btn primary" style="margin-top:10px" type="submit">Validate and save php.ini</button>
+            </form>
+        </section>
+        {% elif section == 'fpm-profile' %}
+        <section class="php-card"><h3>PHP-FPM pool profile</h3>
+            <p class="php-muted">Pool file: <code>{{ pool_path }}</code></p>
+            <div class="php-info-box">Changes are syntax-checked with PHP-FPM and applied by restarting only this PHP version's FPM service. A backup is retained.</div>
+            <form method="post" action="/php/save-pool" onsubmit="return confirm('Validate and save the FPM pool profile, then restart PHP-FPM?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="version" value="{{ selected }}">
+                <textarea class="php-editor" name="config" required spellcheck="false">{{ pool_content }}</textarea>
+                <button class="php-btn primary" style="margin-top:10px" type="submit">Validate and save profile</button>
+            </form>
+        </section>
+        {% elif section == 'disabled-functions' %}
+        <section class="php-card"><h3>Disabled PHP functions</h3>
+            <p class="php-muted">Comma-separated PHP function names. Only functions explicitly listed here are disabled.</p>
+            {{ setting_form('disabled-functions', 'disable_functions', 'Disabled functions', ini_settings['disable_functions'], help='Review application requirements before disabling functions.') }}
+        </section>
+        {% elif section == 'optimization' %}
+        <section class="php-card"><h3>OPcache optimization</h3><div style="display:grid;gap:14px">
+            {{ setting_form('optimization', 'opcache.enable', 'Enable OPcache', ini_settings['opcache.enable']) }}
+            {{ setting_form('optimization', 'opcache.memory_consumption', 'Shared memory size (MB)', ini_settings['opcache.memory_consumption']) }}
+            {{ setting_form('optimization', 'opcache.interned_strings_buffer', 'Interned strings buffer (MB)', ini_settings['opcache.interned_strings_buffer']) }}
+            {{ setting_form('optimization', 'opcache.max_accelerated_files', 'Maximum cached scripts', ini_settings['opcache.max_accelerated_files']) }}
+            {{ setting_form('optimization', 'opcache.validate_timestamps', 'Check file timestamps', ini_settings['opcache.validate_timestamps']) }}
+            {{ setting_form('optimization', 'opcache.revalidate_freq', 'Timestamp check interval (seconds)', ini_settings['opcache.revalidate_freq']) }}
+        </div></section>
+        {% elif section == 'load-average' %}
+        <section class="php-card"><h3>Server load average</h3><p class="php-muted">Linux system load averages for 1, 5, and 15 minutes. These values describe the whole server, not PHP-FPM alone.</p>
+            <div style="margin-top:14px;font-size:24px;font-weight:600;color:#168b45">{{ load_average }}</div>
+        </section>
+        {% elif section == 'session' %}
+        <section class="php-card"><h3>PHP session settings</h3><div style="display:grid;gap:14px">
+            {{ setting_form('session', 'session.save_path', 'Session storage path', ini_settings['session.save_path']) }}
+            {{ setting_form('session', 'session.gc_maxlifetime', 'Session lifetime (seconds)', ini_settings['session.gc_maxlifetime']) }}
+            {{ setting_form('session', 'session.cookie_secure', 'Secure cookie (HTTPS only)', ini_settings['session.cookie_secure']) }}
+            {{ setting_form('session', 'session.use_strict_mode', 'Strict session mode', ini_settings['session.use_strict_mode']) }}
+            {{ setting_form('session', 'session.cookie_httponly', 'HTTP-only cookie', ini_settings['session.cookie_httponly']) }}
+        </div></section>
+        {% elif section in ['logs', 'slow-log'] %}
+        <section class="php-card"><h3>{{ 'PHP-FPM error log' if section == 'logs' else 'PHP-FPM slow log' }}</h3>
+            <p class="php-muted">Showing the most recent log lines from <code>{{ log_path }}</code>.</p>
+            <pre class="php-code">{{ php_logs }}</pre>
+        </section>
+        {% elif section == 'phpinfo' %}
+        <section class="php-card"><h3>PHP {{ selected }} information</h3>
+            <p class="php-muted">Command-line configuration details are displayed as escaped text for this authenticated administrator.</p>
+            <pre class="php-code">{{ php_info }}</pre>
+        </section>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

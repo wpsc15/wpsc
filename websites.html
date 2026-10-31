@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Websites{% endblock %}
+{% block heading %}<span><i class="fas fa-globe" style="color:#26a65b;margin-right:8px"></i>Websites</span>{% endblock %}
+{% block content %}
+<style>
+    .site-page{display:grid;gap:14px;color:#263238}
+    .site-toolbar,.site-card,.site-stat{background:#fff;border:1px solid #e5e9eb;border-radius:8px}
+    .site-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px}
+    .site-toolbar-actions,.site-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .site-tabs{border-bottom:1px solid #e5e9eb;padding:0 12px}
+    .site-tab{padding:12px 10px 10px;color:#68757b;font-size:13px;text-decoration:none;border-bottom:2px solid transparent}
+    .site-tab.active{color:#168b45;border-color:#26a65b;font-weight:600}
+    .site-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:7px 12px;border:1px solid #dfe5e7;border-radius:5px;background:#fff;color:#34434a;font-size:12px;text-decoration:none;cursor:pointer}
+    .site-button.primary{background:#26a65b;border-color:#26a65b;color:#fff}
+    .site-stats{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px}
+    .site-stat{padding:13px 15px}
+    .site-stat-label{color:#78848a;font-size:11px}
+    .site-stat-value{margin-top:7px;color:#263238;font-size:21px;font-weight:650}
+    .site-card{overflow:hidden}
+    .site-table-wrap{overflow-x:auto}
+    .site-table{width:100%;table-layout:fixed;border-collapse:collapse}
+    .site-table th:nth-child(1){width:16%}.site-table th:nth-child(2){width:9%}
+    .site-table th:nth-child(3){width:9%}.site-table th:nth-child(4){width:16%}
+    .site-table th:nth-child(5){width:7%}.site-table th:nth-child(6){width:10%}
+    .site-table th:nth-child(7){width:10%}.site-table th:nth-child(8){width:8%}
+    .site-table th:nth-child(9){width:15%}
+    .site-table th{padding:11px 12px;border-bottom:1px solid #e5e9eb;background:#fafbfb;color:#78848a;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase}
+    .site-table td{padding:11px 12px;border-bottom:1px solid #edf0f1;font-size:12px;vertical-align:middle}
+    .site-table tr:last-child td{border-bottom:0}
+    .site-name{color:#168b45;font-size:13px;font-weight:600;text-decoration:none}
+    button.site-name{padding:0;border:0;background:none;font:inherit;cursor:pointer;text-align:left}
+    button.site-name:hover{text-decoration:underline}
+    .site-sub{margin-top:4px;color:#8a959a;font-size:10px}
+    .site-status{font-size:11px;font-weight:600}
+    .site-status.up{color:#219653}.site-status.down{color:#df5353}.site-status.wait{color:#8a959a}
+    .site-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .site-actions .site-button{min-height:27px;padding:4px 7px;font-size:10px}
+    .site-muted{color:#9aa3a7}
+    .site-search{min-height:34px;width:min(250px,100%);padding:7px 10px;border:1px solid #dfe5e7;border-radius:5px;font-size:12px}
+    .site-filter{min-height:34px;padding:6px 9px;border:1px solid #dfe5e7;border-radius:5px;background:#fff;color:#46545a;font-size:12px}
+    .site-create{padding:15px}
+    .site-create summary{color:#263238;font-size:13px;font-weight:600;cursor:pointer}
+    .site-create p{margin:8px 0 12px;color:#78848a;font-size:11px}
+    .site-form{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px}
+    .site-form label{display:grid;gap:5px;color:#78848a;font-size:11px}
+    .site-form input,.site-form select{width:100%;min-height:35px;padding:7px 9px;border:1px solid #dfe5e7;border-radius:5px;color:#263238}
+    .site-info{padding:10px 14px;color:#7c888d;font-size:11px}
+    .site-dialog-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(22,31,35,.48)}
+    .site-dialog-backdrop[hidden]{display:none}
+    .site-dialog{display:grid;grid-template-rows:auto minmax(0,1fr);width:min(760px,96vw);height:min(610px,88vh);overflow:hidden;border-radius:8px;background:#fff;box-shadow:0 18px 60px rgba(0,0,0,.24)}
+    .site-dialog-header{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e5e9eb;color:#263238;font-size:14px;font-weight:600}
+    .site-dialog-close{border:0;background:transparent;color:#718087;font-size:20px;cursor:pointer}
+    .site-dialog-body{display:grid;grid-template-columns:170px minmax(0,1fr);min-height:0}
+    .site-dialog-nav{overflow:auto;padding:8px 0;background:#f7f8f8;border-right:1px solid #e5e9eb}
+    .site-dialog-tab{display:block;width:100%;padding:10px 14px;border:0;background:transparent;color:#46545a;text-align:left;font-size:12px;cursor:pointer}
+    .site-dialog-tab:hover,.site-dialog-tab[aria-selected="true"]{background:#eaf5ee;color:#168b45;font-weight:600}
+    .site-dialog-content{overflow:auto;padding:20px}
+    .site-dialog-panel[hidden]{display:none}
+    #site-ssl-form[hidden]{display:none!important}
+    .site-dialog-panel h3{margin:0 0 14px;color:#263238;font-size:14px}
+    .site-dialog-panel p{color:#78848a;font-size:12px;line-height:1.6}
+    .site-domain-list{width:100%;border-collapse:collapse;font-size:12px}
+    .site-domain-list th,.site-domain-list td{padding:10px;border-bottom:1px solid #edf0f1;text-align:left}
+    .site-domain-list th{color:#78848a;font-size:10px;font-weight:600}
+    .site-dialog-path{padding:10px;border:1px solid #e5e9eb;border-radius:5px;color:#46545a;font:12px monospace;overflow-wrap:anywhere}
+    .site-dialog-note{margin-top:14px;padding:10px;border-radius:5px;background:#f7f8f8;color:#78848a;font-size:11px;line-height:1.5}
+    .site-dialog-link{color:#168b45;font-size:12px;text-decoration:none}
+    .site-dialog-link:hover{text-decoration:underline}
+    @media(max-width:900px){.site-stats{grid-template-columns:repeat(2,minmax(120px,1fr))}.site-form{grid-template-columns:1fr 1fr}}
+    @media(max-width:560px){.site-toolbar{align-items:flex-start;flex-direction:column}.site-form{grid-template-columns:1fr}}
+    @media(max-width:560px){.site-dialog{height:min(640px,92vh)}.site-dialog-body{grid-template-columns:125px minmax(0,1fr)}.site-dialog-tab{padding:9px 10px;font-size:11px}.site-dialog-content{padding:14px}}
+</style>
+
+{% set apache_count = websites|selectattr('vhost_path')|list|length %}
+{% set up_count = websites|selectattr('is_up')|list|length %}
+{% set down_count = namespace(value=0) %}
+{% for site in websites %}
+    {% if site.last_checked and not site.is_up %}{% set down_count.value = down_count.value + 1 %}{% endif %}
+{% endfor %}
+<div class="site-page">
+    <div class="site-toolbar">
+        <div class="site-tabs" aria-label="Website project type">
+            <a class="site-tab active" href="/websites">Apache Projects</a>
+            <span class="site-tab" style="cursor:default">Node.js, proxy, Go and Python projects are not supported</span>
+        </div>
+        <div class="site-toolbar-actions">
+            <span style="font-size:11px;color:#78848a"><i class="fas fa-circle" style="font-size:8px;color:{% if apache_status == 'active' %}#26a65b{% else %}#d99a31{% endif %}"></i> Apache {{ apache_status|capitalize }}</span>
+            <button type="button" class="site-button primary" onclick="document.getElementById('create-site').open=true;document.getElementById('create-site').scrollIntoView({behavior:'smooth'})"><i class="fas fa-plus"></i> Add site</button>
+            <form method="post" action="/websites/check">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="site-button" type="submit"><i class="fas fa-rotate"></i> Check now</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="site-stats">
+        <div class="site-stat"><div class="site-stat-label">Total websites</div><div class="site-stat-value">{{ websites|length }} <span style="font-size:11px;color:#99a3a7;font-weight:400">/ 100 monitored</span></div></div>
+        <div class="site-stat"><div class="site-stat-label">Online</div><div class="site-stat-value" style="color:#219653">{{ up_count }}</div></div>
+        <div class="site-stat"><div class="site-stat-label">Needs attention</div><div class="site-stat-value" style="color:#df5353">{{ down_count.value }}</div></div>
+        <div class="site-stat"><div class="site-stat-label">Apache virtual hosts</div><div class="site-stat-value">{{ apache_count }}</div></div>
+    </div>
+
+    <details class="site-card site-create" id="create-site">
+        <summary><i class="fas fa-plus-circle" style="color:#26a65b;margin-right:6px"></i>Add a website or monitoring target</summary>
+        <p>Optionally create an Apache HTTP virtual host. Point DNS to this server; configure HTTPS separately after the site is created.</p>
+        <form method="post" action="/websites/add" class="site-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>Domain<input name="domain" placeholder="example.com" maxlength="253" pattern="[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*" required></label>
+            <label>Display name<input name="name" maxlength="120" placeholder="Defaults to domain"></label>
+            <label>Monitoring protocol<select name="scheme"><option value="http">HTTP</option><option value="https">HTTPS</option></select></label>
+            <label style="display:flex;align-items:center;gap:8px;align-self:end;color:#46545a"><input type="checkbox" name="create_vhost" value="true" checked style="width:auto;min-height:auto"> Create Apache site and document root</label>
+            <div style="align-self:end"><button class="site-button primary" type="submit">Create website</button></div>
+        </form>
+    </details>
+
+    <section class="site-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-bottom:1px solid #e5e9eb;flex-wrap:wrap">
+            <div style="display:flex;gap:7px;align-items:center">
+                <select id="site-type" class="site-filter" aria-label="Filter site type">
+                    <option value="all">All sites</option><option value="apache">Apache sites</option><option value="monitor">Monitoring only</option>
+                </select>
+                <input id="site-search" class="site-search" type="search" placeholder="Search domain or name..." aria-label="Search websites">
+            </div>
+            <span style="font-size:11px;color:#899499">{{ websites|length }} website{{ '' if websites|length == 1 else 's' }}</span>
+        </div>
+        <div class="site-table-wrap">
+            <table class="site-table">
+                <thead><tr>
+                    <th>Site name</th><th>Status</th><th>Backup / restore</th><th>Quick actions</th><th>PHP</th><th>URL scheme</th><th>Requests</th><th>WAF</th><th>Operate</th>
+                </tr></thead>
+                <tbody id="site-rows">
+                {% for site in websites %}
+                <tr data-kind="{{ 'apache' if site.vhost_path else 'monitor' }}" data-search="{{ (site.name ~ ' ' ~ site.url)|lower }}">
+                    <td>
+                        <button class="site-name" type="button" data-site-open
+                            data-site-name="{{ site.name }}"
+                            data-site-domain="{{ site.vhost_domain or site.url.split('://')[-1].split('/')[0] }}"
+                            data-site-url="{{ site.url }}"
+                            data-site-id="{{ site.id }}"
+                            data-site-root="{{ site.document_root or '' }}"
+                            data-site-vhost="{{ site.vhost_domain or '' }}">{{ site.name }}</button>
+                        <div class="site-sub">{{ site.url }} <a class="site-dialog-link" href="{{ site.url }}" target="_blank" rel="noopener noreferrer" aria-label="Open {{ site.name }} in a new tab"><i class="fas fa-arrow-up-right-from-square"></i></a></div>
+                    </td>
+                    <td>
+                        {% if site.last_checked %}
+                        <span class="site-status {{ 'up' if site.is_up else 'down' }}">{{ '● Active' if site.is_up else '● Down' }}</span>
+                        <div class="site-sub">{% if site.status_code %}HTTP {{ site.status_code }}{% elif site.error %}Connection failed{% endif %}</div>
+                        {% else %}<span class="site-status wait">Not checked yet</span>{% endif %}
+                    </td>
+                    <td><span class="site-muted">Not available</span></td>
+                    <td><div class="site-actions">
+                        {% if site.vhost_path %}<a class="site-button" href="/apache/vhost/{{ site.vhost_domain|urlencode }}"><i class="fas fa-sliders"></i> Config</a>{% endif %}
+                        {% if site.document_root %}<a class="site-button" href="/files"><i class="fas fa-folder-open"></i> Files</a>{% endif %}
+                        {% if not site.vhost_path and not site.document_root %}<span class="site-muted">Monitoring only</span>{% endif %}
+                    </div></td>
+                    <td><span class="site-muted">Not detected</span></td>
+                    <td><span style="color:#46545a">{{ site.url.split('://')[0]|upper }}</span><div class="site-sub">{% if site.url.startswith('https://') %}HTTPS endpoint{% else %}TLS not configured{% endif %}</div></td>
+                    <td><span style="color:#46545a">{{ site.response_time_ms if site.response_time_ms is not none else '—' }}{% if site.response_time_ms is not none %} ms{% endif %}</span><div class="site-sub">Last: {{ site.last_checked or 'Not checked' }}</div></td>
+                    <td><span class="site-muted">Not available</span></td>
+                    <td><div class="site-actions">
+                        <form method="post" action="/websites/{{ site.id }}/delete" onsubmit="return confirm('Remove this website from monitoring? Its Apache virtual host will remain enabled.')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button class="site-button" type="submit" style="color:#c94c4c" aria-label="Remove website">Remove</button>
+                        </form>
+                    </div></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" style="padding:34px;text-align:center;color:#899499">No websites added. Choose <b>Add a website</b> to create an Apache site or start monitoring a domain.</td></tr>
+                {% endfor %}
+                <tr id="site-no-match" hidden><td colspan="9" style="padding:24px;text-align:center;color:#899499">No websites match the selected filter.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="site-info"><i class="fas fa-circle-info"></i> Backups, PHP version selection, request totals, and WAF are not currently provided by WebPanel. Monitoring checks availability and response time every minute.</div>
+    </section>
+</div>
+<div class="site-dialog-backdrop" id="site-dialog-backdrop" hidden>
+    <section class="site-dialog" role="dialog" aria-modal="true" aria-labelledby="site-dialog-title">
+        <header class="site-dialog-header">
+            <span id="site-dialog-title">Site modification</span>
+            <button type="button" class="site-dialog-close" data-site-dialog-close aria-label="Close dialog">&times;</button>
+        </header>
+        <div class="site-dialog-body">
+            <nav class="site-dialog-nav" aria-label="Site management sections">
+                {% for section in ["Domain Manager", "Directory", "Limit access", "URL rewrite", "Default document", "Config", "SSL", "PHP version", "Web Server", "Git Manager", "Composer", "Redirect", "Reverse proxy", "Hotlink Protection", "Maintenance Mode", "Response log"] %}
+                <button type="button" class="site-dialog-tab" data-site-tab="{{ loop.index0 }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ section }}</button>
+                {% endfor %}
+            </nav>
+            <div class="site-dialog-content">
+                <div class="site-dialog-panel" data-site-panel="0">
+                    <h3>Domain Manager</h3>
+                    <p class="site-dialog-domain-intro">Domains configured for this Apache site.</p>
+                    <table class="site-domain-list"><thead><tr><th>Domain name</th><th>Port</th><th>Type</th></tr></thead>
+                        <tbody><tr><td data-site-domain-value></td><td data-site-port></td><td>Primary</td></tr></tbody>
+                    </table>
+                    <div class="site-dialog-note">Domain aliases cannot be added or removed here yet. Use the Config section to inspect or edit the Apache virtual host.</div>
+                </div>
+                <div class="site-dialog-panel" data-site-panel="1" hidden>
+                    <h3>Website directory</h3>
+                    <p>Document root configured for this site.</p>
+                    <div class="site-dialog-path" data-site-root-value></div>
+                    <p><a class="site-dialog-link" href="/files">Open File Manager <i class="fas fa-arrow-up-right-from-square"></i></a></p>
+                </div>
+                {% for section in ["Limit access", "URL rewrite", "Default document", "Config", "SSL", "PHP version", "Web Server", "Git Manager", "Composer", "Redirect", "Reverse proxy", "Hotlink Protection", "Maintenance Mode", "Response log"] %}
+                <div class="site-dialog-panel" data-site-panel="{{ loop.index + 1 }}" hidden>
+                    <h3>{{ section }}</h3>
+                    {% if section == "Config" %}
+                    <p>View or edit this site's Apache virtual host configuration.</p>
+                    <a class="site-dialog-link" data-site-config-link href="/apache">Open Apache configuration <i class="fas fa-arrow-up-right-from-square"></i></a>
+                    {% elif section == "SSL" %}
+                    <p>Request and deploy a free TLS certificate from Let's Encrypt.</p>
+                    <form id="site-ssl-form" method="post" action="/websites/0/ssl" style="display:grid;gap:12px;max-width:440px">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <label style="display:grid;gap:5px;color:#78848a;font-size:11px">Email for renewal notices
+                            <input name="email" type="email" maxlength="254" autocomplete="email" required placeholder="admin@example.com" style="min-height:35px;padding:7px 9px;border:1px solid #dfe5e7;border-radius:5px">
+                        </label>
+                        <label style="display:flex;align-items:flex-start;gap:8px;color:#46545a;font-size:11px;line-height:1.5">
+                            <input name="confirm_domain" type="checkbox" value="true" required style="margin-top:2px">
+                            I confirm this domain points to this server and inbound ports 80 and 443 are reachable.
+                        </label>
+                        <button class="site-button primary" type="submit" data-site-ssl-submit>Apply Let's Encrypt</button>
+                    </form>
+                    <div class="site-dialog-note">Certbot configures Apache HTTPS and redirects HTTP to HTTPS. Certificates and private keys stay protected under <code>/etc/letsencrypt/</code>; they must never be placed in the public website directory. Renewal is automatic when Certbot's system timer is enabled.</div>
+                    <p data-site-ssl-unavailable hidden>This website has no managed Apache virtual host, so SSL cannot be installed here.</p>
+                    {% else %}
+                    <p>This site-specific feature is not available in WebPanel yet.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+<script>
+(() => {
+    const rows = [...document.querySelectorAll('#site-rows tr[data-kind]')];
+    const search = document.getElementById('site-search');
+    const type = document.getElementById('site-type');
+    const empty = document.getElementById('site-no-match');
+    function filterSites() {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(row => {
+            const show = (type.value === 'all' || row.dataset.kind === type.value)
+                && row.dataset.search.includes(query);
+            row.hidden = !show;
+            if (show) visible += 1;
+        });
+        empty.hidden = visible !== 0 || rows.length === 0;
+    }
+    search.addEventListener('input', filterSites);
+    type.addEventListener('change', filterSites);
+
+    const backdrop = document.getElementById('site-dialog-backdrop');
+    const title = document.getElementById('site-dialog-title');
+    const domainValue = backdrop.querySelector('[data-site-domain-value]');
+    const portValue = backdrop.querySelector('[data-site-port]');
+    const rootValue = backdrop.querySelector('[data-site-root-value]');
+    const configLink = backdrop.querySelector('[data-site-config-link]');
+    const sslForm = backdrop.querySelector('#site-ssl-form');
+    const sslSubmit = backdrop.querySelector('[data-site-ssl-submit]');
+    const sslUnavailable = backdrop.querySelector('[data-site-ssl-unavailable]');
+    const tabs = [...backdrop.querySelectorAll('[data-site-tab]')];
+    const panels = [...backdrop.querySelectorAll('[data-site-panel]')];
+    let returnFocus = null;
+    function selectPanel(index) {
+        tabs.forEach((tab, tabIndex) => tab.setAttribute('aria-selected', String(tabIndex === index)));
+        panels.forEach(panel => { panel.hidden = Number(panel.dataset.sitePanel) !== index; });
+    }
+    document.querySelectorAll('[data-site-open]').forEach(button => {
+        button.addEventListener('click', () => {
+            const siteUrl = new URL(button.dataset.siteUrl, window.location.href);
+            const domain = button.dataset.siteVhost || siteUrl.hostname;
+            title.textContent = `Site modification [${domain}]`;
+            domainValue.textContent = domain;
+            portValue.textContent = siteUrl.port || (siteUrl.protocol === 'https:' ? '443' : '80');
+            rootValue.textContent = button.dataset.siteRoot || 'Not configured (monitoring only)';
+            configLink.href = button.dataset.siteVhost
+                ? `/apache/vhost/${encodeURIComponent(button.dataset.siteVhost)}`
+                : '/apache';
+            sslForm.action = `/websites/${encodeURIComponent(button.dataset.siteId)}/ssl`;
+            sslForm.hidden = !button.dataset.siteVhost;
+            sslSubmit.disabled = !button.dataset.siteVhost;
+            sslUnavailable.hidden = Boolean(button.dataset.siteVhost);
+            backdrop.hidden = false;
+            returnFocus = button;
+            selectPanel(0);
+            backdrop.querySelector('[data-site-dialog-close]').focus();
+        });
+    });
+    tabs.forEach(tab => tab.addEventListener('click', () => selectPanel(Number(tab.dataset.siteTab))));
+    function closeDialog() {
+        backdrop.hidden = true;
+        if (returnFocus) returnFocus.focus();
+    }
+    backdrop.querySelector('[data-site-dialog-close]').addEventListener('click', closeDialog);
+    backdrop.addEventListener('click', event => { if (event.target === backdrop) closeDialog(); });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !backdrop.hidden) closeDialog();
+    });
+})();
+</script>
+{% endblock %}

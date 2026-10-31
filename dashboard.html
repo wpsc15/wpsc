@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-gauge-high" style="color:#26a65b;font-size:16px"></i>
+    Dashboard
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="panel-dashboard">
+    <div class="dashboard-intro">
+        <div class="dashboard-intro-copy">Welcome to your server control center. Monitor system resources and manage your hosting services.</div>
+        <div class="dashboard-live" id="ws-status">Live monitoring</div>
+    </div>
+
+    <section class="dashboard-section">
+        <div class="dashboard-section-title"><span><i class="fas fa-gauge-high"></i>System status</span><span class="dashboard-intro-copy">{{ sys.hostname }} · {{ sys.platform }}</span></div>
+        <div class="dashboard-metrics">
+            <div class="dashboard-metric">
+                <div><div class="dashboard-metric-label">CPU usage</div><div class="dashboard-metric-value" id="cpu-value">{{ sys.cpu_percent }}%</div><div class="dashboard-metric-detail">Load <span id="load-val">{{ sys.load_1 }} / {{ sys.load_5 }} / {{ sys.load_15 }}</span></div></div>
+                <div class="metric-ring" id="cpu-ring" style="--metric-value:{{ sys.cpu_percent }}%"><span><i class="fas fa-microchip"></i></span></div>
+            </div>
+            <div class="dashboard-metric">
+                <div><div class="dashboard-metric-label">Memory usage</div><div class="dashboard-metric-value" id="ram-value">{{ sys.ram_percent }}%</div><div class="dashboard-metric-detail" id="ram-detail">{{ bytes_to_human(sys.ram_used) }} / {{ bytes_to_human(sys.ram_total) }}</div></div>
+                <div class="metric-ring" id="ram-ring" style="--metric-value:{{ sys.ram_percent }}%"><span><i class="fas fa-memory"></i></span></div>
+            </div>
+            <div class="dashboard-metric">
+                <div><div class="dashboard-metric-label">Disk usage</div><div class="dashboard-metric-value" id="disk-value">{{ sys.disk_percent }}%</div><div class="dashboard-metric-detail">{{ bytes_to_human(sys.disk_used) }} / {{ bytes_to_human(sys.disk_total) }}</div></div>
+                <div class="metric-ring" id="disk-ring" style="--metric-value:{{ sys.disk_percent }}%"><span><i class="fas fa-hard-drive"></i></span></div>
+            </div>
+            <div class="dashboard-metric">
+                <div><div class="dashboard-metric-label">PHP version</div><div class="dashboard-metric-value">{{ php_version }}</div><div class="dashboard-metric-detail">Platform: {{ sys.platform }}</div></div>
+                <div class="metric-ring metric-ring-static"><span><i class="fab fa-php"></i></span></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <div class="dashboard-section-title"><span><i class="fas fa-chart-pie"></i>Overview</span></div>
+        <div class="dashboard-overview">
+            <div class="dashboard-overview-item"><span class="dashboard-overview-label">Websites monitored</span><strong class="dashboard-overview-value">{{ website_count }}</strong></div>
+            <div class="dashboard-overview-item"><span class="dashboard-overview-label">Databases</span><strong class="dashboard-overview-value">{{ database_count }}</strong></div>
+            <div class="dashboard-overview-item"><span class="dashboard-overview-label">PHP versions</span><strong class="dashboard-overview-value">{{ php_versions|length }}</strong></div>
+            <div class="dashboard-overview-item"><span class="dashboard-overview-label">Active services</span><strong class="dashboard-overview-value">{{ (1 if apache_running else 0) + (1 if mysql_running else 0) + (1 if php_fpm_running else 0) }}</strong></div>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+            <div class="dashboard-section-title"><span><i class="fas fa-cubes"></i>Software</span><a href="/stack" style="color:#268d4a;font-size:11px;text-decoration:none">Install software <i class="fas fa-arrow-right"></i></a></div>
+            <div class="dashboard-software-grid">
+                <a class="dashboard-software-item" href="/apache"><i class="dashboard-software-icon fas fa-globe"></i><span class="dashboard-software-name">Apache</span><span class="dashboard-software-status">{% if apache.running %}Running{% else %}Stopped{% endif %}</span></a>
+                <a class="dashboard-software-item" href="/mysql"><i class="dashboard-software-icon fas fa-database"></i><span class="dashboard-software-name">MySQL / MariaDB</span><span class="dashboard-software-status">{% if mysql.running %}Running{% else %}Stopped{% endif %}</span></a>
+                <a class="dashboard-software-item" href="/php"><i class="dashboard-software-icon fab fa-php"></i><span class="dashboard-software-name">PHP {{ php_version }}</span><span class="dashboard-software-status">{{ php_versions|length }} version(s)</span></a>
+                <a class="dashboard-software-item" href="/php/phpmyadmin"><i class="dashboard-software-icon fas fa-table-columns"></i><span class="dashboard-software-name">phpMyAdmin</span><span class="dashboard-software-status">Database manager</span></a>
+                <a class="dashboard-software-item" href="/websites"><i class="dashboard-software-icon fas fa-heart-pulse"></i><span class="dashboard-software-name">Websites</span><span class="dashboard-software-status">{{ website_count }} monitored</span></a>
+                <a class="dashboard-software-item" href="/files"><i class="dashboard-software-icon fas fa-folder-open"></i><span class="dashboard-software-name">File manager</span><span class="dashboard-software-status">Web root</span></a>
+                <a class="dashboard-software-item" href="/mysql/backup"><i class="dashboard-software-icon fas fa-box-archive"></i><span class="dashboard-software-name">DB backup</span><span class="dashboard-software-status">Backup and restore</span></a>
+                <a class="dashboard-software-item" href="/stack"><i class="dashboard-software-icon fas fa-boxes-stacked"></i><span class="dashboard-software-name">App installer</span><span class="dashboard-software-status">Manage packages</span></a>
+                <a class="dashboard-software-item" href="/services"><i class="dashboard-software-icon fas fa-gears"></i><span class="dashboard-software-name">Services</span><span class="dashboard-software-status">Installed daemons</span></a>
+                <a class="dashboard-software-item" href="/logs"><i class="dashboard-software-icon fas fa-file-lines"></i><span class="dashboard-software-name">Server logs</span><span class="dashboard-software-status">Service journal</span></a>
+                <a class="dashboard-software-item" href="/cron"><i class="dashboard-software-icon fas fa-clock"></i><span class="dashboard-software-name">Scheduled jobs</span><span class="dashboard-software-status">Cron tasks</span></a>
+                <a class="dashboard-software-item" href="/firewall"><i class="dashboard-software-icon fas fa-shield-halved"></i><span class="dashboard-software-name">Firewall</span><span class="dashboard-software-status">UFW rules</span></a>
+                <a class="dashboard-software-item" href="/docker"><i class="dashboard-software-icon fab fa-docker"></i><span class="dashboard-software-name">Docker</span><span class="dashboard-software-status">Container manager</span></a>
+            </div>
+    </section>
+
+<!-- Service Status + Quick Actions Row -->
+<div class="dashboard-lower-grid">
+
+    <!-- Service Status -->
+    <div class="dashboard-panel-card" style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h3 style="font-size:15px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-circle-dot" style="color:#3b82f6;font-size:13px"></i>
+            Service Status
+        </h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+            <!-- Apache -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1f2937;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-globe" style="color:#f97316;font-size:14px"></i>
+                    <span style="font-size:14px;font-weight:500">Apache</span>
+                    <span style="font-size:11px;color:#6b7280">{{ apache.version[:20] if apache.version else 'N/A' }}</span>
+                </div>
+                <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;
+                    {% if apache.running %}background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)
+                    {% else %}background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3){% endif %}">
+                    {% if apache.running %}● Active{% else %}● Stopped{% endif %}
+                </span>
+            </div>
+            <!-- MySQL -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1f2937;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-database" style="color:#3b82f6;font-size:14px"></i>
+                    <span style="font-size:14px;font-weight:500">MySQL</span>
+                    <span style="font-size:11px;color:#6b7280">{{ mysql.version[:20] if mysql.version else 'N/A' }}</span>
+                </div>
+                <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;
+                    {% if mysql.running %}background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)
+                    {% else %}background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3){% endif %}">
+                    {% if mysql.running %}● Active{% else %}● Stopped{% endif %}
+                </span>
+            </div>
+            <!-- PHP Versions -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1f2937;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="fab fa-php" style="color:#8b5cf6;font-size:14px"></i>
+                    <span style="font-size:14px;font-weight:500">PHP</span>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+                    {% for v in php_versions %}
+                    <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(139,92,246,0.15);color:#c084fc;border:1px solid rgba(139,92,246,0.3)">{{ v }}</span>
+                    {% else %}
+                    <span style="font-size:12px;color:#6b7280">Not found</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-panel-card" style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h3 style="font-size:15px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-bolt" style="color:#fbbf24;font-size:13px"></i>
+            Quick Actions
+        </h3>
+
+        <div style="margin-bottom:16px;padding:12px;background:#1f2937;border-radius:8px">
+            <div style="font-size:12px;color:#9ca3af;margin-bottom:9px;text-transform:uppercase;letter-spacing:0.05em">Configuration quick access</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <a href="/apache/config" style="padding:7px 10px;background:#030712;border:1px solid #374151;border-radius:6px;color:#fdba74;text-decoration:none;font-size:12px"><i class="fas fa-file-code" style="margin-right:5px"></i>Apache config</a>
+                <a href="/mysql/config" style="padding:7px 10px;background:#030712;border:1px solid #374151;border-radius:6px;color:#93c5fd;text-decoration:none;font-size:12px"><i class="fas fa-database" style="margin-right:5px"></i>MySQL config</a>
+                <a href="/php" style="padding:7px 10px;background:#030712;border:1px solid #374151;border-radius:6px;color:#c4b5fd;text-decoration:none;font-size:12px"><i class="fab fa-php" style="margin-right:5px"></i>PHP settings</a>
+                <a href="/php/phpmyadmin" style="padding:7px 10px;background:#030712;border:1px solid #374151;border-radius:6px;color:#fcd34d;text-decoration:none;font-size:12px"><i class="fas fa-table-columns" style="margin-right:5px"></i>phpMyAdmin</a>
+                <a href="/mysql/backup" style="padding:7px 10px;background:#030712;border:1px solid #374151;border-radius:6px;color:#6ee7b7;text-decoration:none;font-size:12px"><i class="fas fa-box-archive" style="margin-right:5px"></i>DB backup / restore</a>
+            </div>
+        </div>
+
+        <!-- Apache actions -->
+        <div style="margin-bottom:14px">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Apache</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <form method="post" action="/apache/action">
+                    <input type="hidden" name="action" value="start">
+                    <button type="submit" style="background:#065f46;color:#6ee7b7;border:1px solid #064e3b;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:opacity 0.15s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-play" style="margin-right:4px"></i>Start
+                    </button>
+                </form>
+                <form method="post" action="/apache/action">
+                    <input type="hidden" name="action" value="stop">
+                    <button type="submit" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:opacity 0.15s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-stop" style="margin-right:4px"></i>Stop
+                    </button>
+                </form>
+                <form method="post" action="/apache/action">
+                    <input type="hidden" name="action" value="restart">
+                    <button type="submit" style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e40af;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:opacity 0.15s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-rotate" style="margin-right:4px"></i>Restart
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MySQL actions -->
+        <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">MySQL</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <form method="post" action="/mysql/action">
+                    <input type="hidden" name="action" value="start">
+                    <button type="submit" style="background:#065f46;color:#6ee7b7;border:1px solid #064e3b;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:opacity 0.15s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-play" style="margin-right:4px"></i>Start
+                    </button>
+                </form>
+                <form method="post" action="/mysql/action">
+                    <input type="hidden" name="action" value="stop">
+                    <button type="submit" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:opacity 0.15s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-stop" style="margin-right:4px"></i>Stop
+                    </button>
+                </form>
+                <form method="post" action="/mysql/action">
+                    <input type="hidden" name="action" value="restart">
+                    <button type="submit" style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e40af;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:opacity 0.15s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-rotate" style="margin-right:4px"></i>Restart
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="dashboard-chart-grid">
+    <!-- CPU Chart -->
+    <div class="dashboard-section">
+        <h3 style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-chart-line" style="color:#3b82f6;font-size:13px"></i>
+            CPU History
+        </h3>
+        <div class="dashboard-chart-body"><canvas id="cpuChart" style="max-height:160px"></canvas></div>
+    </div>
+
+    <!-- RAM Chart -->
+    <div class="dashboard-section">
+        <h3 style="font-size:14px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-chart-area" style="color:#a855f7;font-size:13px"></i>
+            RAM History
+        </h3>
+        <div class="dashboard-chart-body"><canvas id="ramChart" style="max-height:160px"></canvas></div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---- Chart.js setup ----
+const chartDefaults = {
+    responsive: true,
+    animation: { duration: 300 },
+    plugins: { legend: { display: false } },
+    scales: {
+        x: { grid: { color: '#edf0f1' }, ticks: { color: '#7d878d', font: { size: 10 } } },
+        y: { min: 0, max: 100, grid: { color: '#edf0f1' }, ticks: { color: '#7d878d', font: { size: 10 }, callback: v => v + '%' } }
+    }
+};
+
+const MAX_POINTS = 30;
+const labels = Array(MAX_POINTS).fill('');
+const cpuData = Array(MAX_POINTS).fill(0);
+const ramData = Array(MAX_POINTS).fill(0);
+
+const cpuChart = new Chart(document.getElementById('cpuChart'), {
+    type: 'line',
+    data: {
+        labels: [...labels],
+        datasets: [{
+            data: [...cpuData],
+            borderColor: '#26a65b',
+            backgroundColor: 'rgba(38,166,91,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2
+        }]
+    },
+    options: { ...chartDefaults }
+});
+
+const ramChart = new Chart(document.getElementById('ramChart'), {
+    type: 'line',
+    data: {
+        labels: [...labels],
+        datasets: [{
+            data: [...ramData],
+            borderColor: '#78bd8e',
+            backgroundColor: 'rgba(120,189,142,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2
+        }]
+    },
+    options: { ...chartDefaults }
+});
+
+function pushPoint(chart, dataArr, value) {
+    dataArr.push(value);
+    if (dataArr.length > MAX_POINTS) dataArr.shift();
+    chart.data.datasets[0].data = [...dataArr];
+    chart.update('none');
+}
+
+function bytesToHuman(n) {
+    const units = ['B','KB','MB','GB','TB'];
+    for (const u of units) {
+        if (n < 1024) return n.toFixed(1) + ' ' + u;
+        n /= 1024;
+    }
+    return n.toFixed(1) + ' PB';
+}
+
+// ---- WebSocket ----
+function connectWS() {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(proto + '//' + window.location.host + '/ws/stats');
+
+    ws.onopen = () => {
+        document.getElementById('ws-status').textContent = '● Live';
+        document.getElementById('ws-status').style.color = '#34d399';
+    };
+
+    ws.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        // Stat cards
+        document.getElementById('cpu-value').textContent = d.cpu_percent.toFixed(1) + '%';
+        document.getElementById('cpu-ring').style.setProperty('--metric-value', d.cpu_percent + '%');
+        document.getElementById('ram-value').textContent = d.ram_percent.toFixed(1) + '%';
+        document.getElementById('ram-ring').style.setProperty('--metric-value', d.ram_percent + '%');
+        document.getElementById('ram-detail').textContent = bytesToHuman(d.ram_used) + ' / ' + bytesToHuman(d.ram_total);
+        document.getElementById('disk-value').textContent = d.disk_percent.toFixed(1) + '%';
+        document.getElementById('disk-ring').style.setProperty('--metric-value', d.disk_percent + '%');
+        document.getElementById('load-val').textContent = d.load_1 + ' / ' + d.load_5 + ' / ' + d.load_15;
+        // Charts
+        pushPoint(cpuChart, cpuData, d.cpu_percent);
+        pushPoint(ramChart, ramData, d.ram_percent);
+    };
+
+    ws.onclose = () => {
+        document.getElementById('ws-status').textContent = '○ Reconnecting...';
+        document.getElementById('ws-status').style.color = '#f59e0b';
+        setTimeout(connectWS, 3000);
+    };
+
+    ws.onerror = () => ws.close();
+}
+
+connectWS();
+</script>
+{% endblock %}

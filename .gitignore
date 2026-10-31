@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+webpanel.db
+database_backups/
+.env
+.env.*
+!.env.example
+*.log

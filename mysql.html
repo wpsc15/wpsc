@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}Database Manager{% endblock %}
+{% block heading %}<span><i class="fas fa-database" style="color:#60a5fa;margin-right:8px"></i>Database Manager <small style="font-size:12px;color:#9ca3af;font-weight:400">MySQL / MariaDB</small></span>{% endblock %}
+{% block content %}
+<style>
+.db-manager { display:grid; gap:12px; max-width:1400px; color:#263238; }
+.db-manager-card { overflow:hidden; border:1px solid #e5e9eb; border-radius:7px; background:#fff; box-shadow:0 2px 8px rgb(35 52 59 / 4%); }
+.db-manager-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px; border-bottom:1px solid #edf0f1; }
+.db-manager-actions,.db-manager-filters,.db-manager-pagination { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.db-manager-button { display:inline-flex; min-height:32px; align-items:center; justify-content:center; gap:6px; padding:6px 10px; border:1px solid #dfe5e7; border-radius:4px; background:#fff; color:#35444a; font-size:12px; text-decoration:none; cursor:pointer; }
+.db-manager-button:hover { border-color:#26a65b; color:#218c4b; }
+.db-manager-button-primary { border-color:#26a65b; background:#26a65b; color:#fff; }
+.db-manager-button-danger { color:#b42318; }
+.db-manager-status { display:flex; align-items:center; gap:8px; color:#68777d; font-size:12px; }
+.db-manager-status strong { color:#25343a; font-size:14px; }
+.db-manager-status-pill { padding:3px 8px; border-radius:10px; background:#fff1f0; color:#b42318; font-weight:600; }
+.db-manager-status-pill-active { background:#e9f7ee; color:#23844a; }
+.db-manager-note { padding:9px 14px; background:#f7f9f9; color:#6f7d82; font-size:11px; line-height:1.5; }
+.db-manager-disclosure { border-bottom:1px solid #edf0f1; }
+.db-manager-disclosure:last-child { border-bottom:0; }
+.db-manager-disclosure > summary { padding:11px 14px; color:#38474d; font-size:12px; font-weight:600; cursor:pointer; }
+.db-manager-disclosure-body { padding:0 14px 14px; }
+.db-manager-table-wrap { overflow:auto; }
+.db-manager-table { width:100%; min-width:940px; border-collapse:collapse; font-size:12px; }
+.db-manager-table th { padding:9px 10px; background:#f6f8f8; color:#758187; font-size:11px; font-weight:600; text-align:left; white-space:nowrap; }
+.db-manager-table td { padding:9px 10px; border-top:1px solid #edf0f1; vertical-align:middle; }
+.db-manager-table tr:hover td { background:#fbfdfb; }
+.db-manager-subtext { display:block; margin-top:3px; color:#859197; font-size:10px; }
+.db-manager-muted { color:#859197; }
+.db-manager-ops { display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
+.db-manager-ops form { display:inline-flex; }
+.db-manager-ops .db-manager-button { min-height:27px; padding:4px 7px; font-size:11px; }
+.db-manager-table details { position:relative; }
+.db-manager-table details > summary { color:#268a4a; cursor:pointer; white-space:nowrap; }
+.db-manager-popover { position:absolute; z-index:5; right:0; width:min(340px,80vw); max-height:300px; overflow:auto; padding:10px; border:1px solid #dfe5e7; border-radius:5px; background:#fff; box-shadow:0 6px 20px rgb(20 30 35 / 14%); }
+.db-manager-popover form { display:grid; gap:7px; }
+.db-manager-popover select,.db-manager-input { width:100%; padding:8px; border:1px solid #dfe5e7; border-radius:4px; background:#fff; color:#263238; }
+.db-manager-empty { padding:24px; color:#758187; text-align:center; }
+.db-manager-pagination { justify-content:flex-end; padding:10px 12px; border-top:1px solid #edf0f1; color:#758187; font-size:11px; }
+.db-manager-pagination select,.db-manager-pagination input { min-height:28px; padding:4px 6px; border:1px solid #dfe5e7; border-radius:4px; background:white; color:#263238; }
+.db-manager-pagination input { width:48px; }
+@media(max-width:700px) { .db-manager-toolbar { align-items:flex-start; } .db-manager-actions { width:100%; } }
+</style>
+<div class="db-manager">
+    {% if flash %}<div style="padding:12px;border-radius:6px;background:{% if flash.type == 'error' %}#450a0a{% else %}#064e3b{% endif %};color:{% if flash.type == 'error' %}#fca5a5{% else %}#a7f3d0{% endif %}">{{ flash.msg }}</div>{% endif %}
+    {% if created_credentials %}
+    <section style="padding:16px;border:1px solid #059669;background:#064e3b;border-radius:10px">
+        <h2 style="font-size:15px;font-weight:600;color:#d1fae5">{% if created_credentials.reset %}Updated MySQL password — copy it now{% else %}New MySQL login — copy these details now{% endif %}</h2>
+        <p style="font-size:12px;color:#a7f3d0;margin:6px 0 12px">{% if created_credentials.reset %}This random password is shown only in this response. WebPanel does not store it and cannot show it again.{% else %}Use this same MySQL username and password in phpMyAdmin or a MySQL client. The password is shown only in this response and is not saved by WebPanel. Existing MySQL passwords cannot be read back.{% endif %}</p>
+        <div style="display:grid;gap:8px;font:13px monospace;color:#ecfdf5">
+            <div>Username: <strong>{{ created_credentials.username }}</strong></div>
+            <div>Password:
+                <input id="new-db-password" type="password" readonly value="{{ created_credentials.password }}" style="width:min(320px,60vw);padding:5px;background:#022c22;color:#ecfdf5;border:1px solid #047857;border-radius:4px">
+                <button type="button" onclick="const e=document.getElementById('new-db-password');e.type=e.type==='password'?'text':'password';this.textContent=e.type==='password'?'Show':'Hide'" style="margin-left:8px;padding:4px 8px;background:#047857;color:white;border:0;border-radius:4px;cursor:pointer">Show</button>
+            </div>
+            {% if created_credentials.database %}<div>Access: <strong>{{ created_credentials.database }}</strong></div>{% endif %}
+            <div>Host: <strong>{{ created_credentials.host or 'localhost' }}</strong></div>
+        </div>
+    </section>
+    {% endif %}
+    <section class="db-manager-card db-manager-toolbar">
+        <div>
+            <div class="db-manager-status"><strong>MySQL / MariaDB</strong><span class="db-manager-status-pill {% if status.running %}db-manager-status-pill-active{% endif %}">{{ status.status|upper }}</span></div>
+            <span class="db-manager-subtext">{{ status.version }}</span>
+        </div>
+        <div class="db-manager-actions">
+            {% for action in ['start', 'stop', 'restart'] %}
+            <form method="post" action="/mysql/action">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="{{ action }}">
+                <button class="db-manager-button" type="submit" onclick="return confirm('{{ action|capitalize }} the database service?');">{{ action|capitalize }}</button>
+            </form>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="db-manager-card">
+    <details class="db-manager-disclosure">
+        <summary>Database administrator credentials</summary>
+        <div class="db-manager-disclosure-body">
+        {% if has_root_pass %}<p style="font-size:12px;color:#34d399;margin-bottom:10px">A MySQL root password is set for WebPanel's server-side database commands. It is not displayed.</p>
+        {% else %}<p style="font-size:12px;color:#9ca3af;margin-bottom:10px">On Ubuntu, MySQL root commonly uses local Unix-socket authentication. WebPanel runs as root and can use that socket; leave this password blank unless you explicitly configured a MySQL root password.</p>{% endif %}
+        <form method="post" action="/mysql/set-root-pass" style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="password" name="root_pass" placeholder="{% if has_root_pass %}Replace session password (blank clears){% else %}MySQL root password, if configured{% endif %}" autocomplete="new-password" style="min-width:260px;padding:9px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+            <button type="submit" style="padding:9px 12px;background:#374151;color:white;border:0;border-radius:6px;cursor:pointer">{% if has_root_pass %}Update / clear{% else %}Use for this session{% endif %}</button>
+        </form>
+        <p style="font-size:11px;color:#9ca3af;margin-top:8px">This credential is only for WebPanel's server-side MySQL commands; it is not your phpMyAdmin login. Ubuntu's socket-authenticated root account cannot sign in to phpMyAdmin with a password. Use the database login form below for phpMyAdmin. Root credentials stay in server memory for this session and are not shown.</p>
+        </div>
+    </details>
+    </section>
+    <section class="db-manager-card">
+        <details class="db-manager-disclosure" id="create-database">
+            <summary><i class="fas fa-plus" style="margin-right:6px;color:#26a65b"></i>Add database</summary>
+            <div class="db-manager-disclosure-body">
+            <form method="post" action="/mysql/create-db" style="display:grid;gap:9px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input class="db-manager-input" name="db_name" required maxlength="64" pattern="[A-Za-z0-9_$-]{1,64}" placeholder="Database name">
+                <button class="db-manager-button db-manager-button-primary" type="submit">Create database</button>
+            </form>
+            </div>
+        </details>
+        <details class="db-manager-disclosure" id="credentials">
+            <summary>Create database login for phpMyAdmin</summary>
+            <div class="db-manager-disclosure-body">
+            <p style="font-size:12px;color:#9ca3af;line-height:1.5;margin-bottom:10px">Create a named account to use in both phpMyAdmin and MySQL clients—not <code>root</code>. Do not enter <code>root</code> as the username: Ubuntu's root account commonly uses socket authentication and must remain unchanged. A generated password is strong and shown once after creation.</p>
+            <form method="post" action="/mysql/create-user" style="display:grid;gap:9px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input name="db_username" required maxlength="32" pattern="[A-Za-z0-9_.-]{1,32}" placeholder="Username" autocomplete="off" style="padding:9px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+                <div style="display:flex;gap:6px">
+                    <input id="db-password" type="password" name="db_password" required minlength="16" maxlength="256" placeholder="At least 16 characters" autocomplete="new-password" style="flex:1;min-width:0;padding:9px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+                    <button type="button" onclick="generateDbPassword()" style="padding:8px;background:#047857;color:white;border:0;border-radius:6px;cursor:pointer">Generate strong password</button>
+                    <button type="button" onclick="const p=document.getElementById('db-password');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Show':'Hide'" style="padding:8px;background:#374151;color:white;border:0;border-radius:6px;cursor:pointer">Show</button>
+                </div>
+                <label style="font-size:12px;color:#9ca3af">Access level
+                    <select id="db-privilege-scope" name="privilege_scope" onchange="updateDbAccessFields()" style="display:block;width:100%;margin-top:5px;padding:9px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+                        <option value="database">One selected database (recommended)</option>
+                        <option value="administrator">Full MySQL administrator (all databases)</option>
+                    </select>
+                </label>
+                <select id="db-name" name="db_name" style="padding:9px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+                    <option value="">No database grant</option>
+                    {% for database in databases %}<option value="{{ database }}">{{ database }}</option>{% endfor %}
+                </select>
+                <label style="font-size:12px;color:#9ca3af">Allowed MySQL host (localhost recommended)
+                    <input name="db_host" value="localhost" required maxlength="255" pattern="[A-Za-z0-9_.:%-]{1,255}" placeholder="localhost" style="display:block;width:100%;margin-top:5px;padding:9px;background:#030712;color:#f9fafb;border:1px solid #374151;border-radius:6px">
+                </label>
+                <p style="font-size:11px;color:#9ca3af;line-height:1.5">A host such as <code>%</code> enables this account to connect from other hosts, if MySQL network access and firewall rules also allow it. Use a specific client IP where possible. Global administrators are restricted to localhost.</p>
+                <div id="db-admin-warning" style="display:none;padding:10px;border:1px solid #991b1b;border-radius:6px;background:#450a0a;color:#fecaca;font-size:12px;line-height:1.5">This grants full control over every database and permission to grant access to other accounts. Keep it only if you need server-wide administration; otherwise use one selected database.</div>
+                <button type="submit" onclick="return confirmDbAccount()" style="padding:9px;background:#2563eb;color:white;border:0;border-radius:6px;cursor:pointer">Create MySQL login</button>
+            </form>
+            </div>
+        </details>
+    </section>
+    <section class="db-manager-card">
+        <div class="db-manager-toolbar">
+            <div class="db-manager-status"><strong>Databases</strong><span>{{ database_details|length }} total</span></div>
+            <div class="db-manager-actions">
+                <a href="#create-database" class="db-manager-button db-manager-button-primary" onclick="document.getElementById('create-database').open=true"><i class="fas fa-plus"></i>Add DB</a>
+                {% if phpmyadmin.installed %}<a href="{{ phpmyadmin.url }}" target="_blank" rel="noopener noreferrer" class="db-manager-button"><i class="fas fa-arrow-up-right-from-square"></i>phpMyAdmin</a>{% endif %}
+                <a href="/mysql/backup" class="db-manager-button"><i class="fas fa-box-archive"></i>Backup &amp; restore</a>
+                <a href="/mysql/config" class="db-manager-button"><i class="fas fa-sliders"></i>Advanced setup</a>
+                <a href="/mysql" class="db-manager-button"><i class="fas fa-rotate"></i>Sync from server</a>
+            </div>
+        </div>
+        <p class="db-manager-note">Inventory and permissions are read directly from this MySQL/MariaDB server. Backups are manual (no automatic schedule or recycle bin); quotas are not set. SQL Server, MongoDB, Redis, and PostgreSQL are not supported here.</p>
+        {% if not status.running %}<p style="font-size:12px;color:#fcd34d">Start the database service to display databases.</p>
+        {% elif inventory_error %}<p style="font-size:12px;color:#fca5a5">{{ inventory_error }}</p>
+        {% elif database_details %}
+        <div class="db-manager-toolbar">
+            <div class="db-manager-filters">
+                <select id="database-filter" class="db-manager-input" aria-label="Filter database type" style="width:auto">
+                    <option value="user" selected>User databases</option>
+                    <option value="all">All databases</option>
+                    <option value="system">System databases</option>
+                </select>
+                <input type="search" id="database-search" class="db-manager-input" placeholder="Database search..." aria-label="Search databases" style="width:min(270px,70vw)">
+            </div>
+            <span id="database-result-count" class="db-manager-muted" style="font-size:11px"></span>
+        </div>
+        <div class="db-manager-table-wrap">
+        <table class="db-manager-table"><thead><tr><th>Database name</th><th>Username</th><th>Password</th><th>Quota</th><th>Backup</th><th>Location</th><th>Note</th><th>Operate</th></tr></thead><tbody id="database-rows">
+            {% for database in database_details %}
+            {% set is_system = database.name in ['information_schema','mysql','performance_schema','sys'] %}
+            <tr data-database-name="{{ database.name|lower }}" data-system="{{ 'true' if is_system else 'false' }}">
+                <td><strong>{{ database.name }}</strong>{% if is_system %}<span class="db-manager-subtext">System schema</span>{% else %}<span class="db-manager-subtext">{{ database.tables }} tables · {{ (database.size_bytes / 1048576)|round(2) }} MiB · {{ database.collation or 'default collation' }}</span>{% endif %}</td>
+                <td>
+                    {% if database_grants.get(database.name) %}
+                    {% for grant in database_grants.get(database.name) %}
+                    <span style="display:block">{{ grant.user }}<span class="db-manager-subtext">{{ grant.host }}</span></span>
+                    {% if not is_system and grant.user.lower() not in ['root','mysql.infoschema','mysql.session','mysql.sys','mariadb.sys'] %}
+                    <form method="post" action="/mysql/reset-user-password" onsubmit="return confirm('Rotate password for {{ grant.user }}@{{ grant.host }}? Applications using this account will need the new password.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="db_username" value="{{ grant.user }}">
+                        <input type="hidden" name="db_host" value="{{ grant.host }}">
+                        <button class="db-manager-button" type="submit" style="min-height:24px;padding:2px 6px;font-size:10px">Password</button>
+                    </form>
+                    {% endif %}
+                    {% if not loop.last %}<hr style="border:0;border-top:1px solid #edf0f1;margin:5px 0">{% endif %}
+                    {% endfor %}
+                    {% else %}<span class="db-manager-muted">No scoped user</span>{% endif %}
+                </td>
+                <td><span class="db-manager-muted" title="MySQL does not return plaintext account passwords">Not readable</span></td>
+                <td><span class="db-manager-muted">Not set</span></td>
+                <td>
+                    {% if not is_system %}
+                    <form method="post" action="/mysql/backup/database/{{ database.name }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button class="db-manager-button" type="submit" aria-label="Backup {{ database.name }}"><i class="fas fa-download"></i>Backup</button>
+                    </form>
+                    {% else %}<span class="db-manager-muted">—</span>{% endif %}
+                </td>
+                <td>Local server</td>
+                <td><span class="db-manager-muted">{{ database.tables }} tables<br>{{ database.collation or '—' }}</span></td>
+                <td>
+                    <div class="db-manager-ops">
+                    {% if phpmyadmin.installed %}
+                    <a href="{{ phpmyadmin.url }}" target="_blank" rel="noopener noreferrer" class="db-manager-button">phpMyAdmin</a>
+                    {% endif %}
+                    {% if not is_system %}
+                    <details>
+                        <summary class="db-manager-button">Permission</summary>
+                        <div class="db-manager-popover">
+                        {% if managed_db_users %}
+                        <form method="post" action="/mysql/database-permission" onsubmit="return setDbPermissionAccount(this)">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="db_name" value="{{ database.name }}">
+                            <select name="account" required>
+                                {% for db_user in managed_db_users %}
+                                <option value="{{ db_user.user }}|{{ db_user.host }}">{{ db_user.user }}@{{ db_user.host }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="db_username" value="">
+                            <input type="hidden" name="db_host" value="">
+                            <select name="permission" required aria-label="Grant or revoke access">
+                                <option value="grant">Grant full access</option>
+                                <option value="revoke">Revoke this database's access</option>
+                            </select>
+                            <button type="submit" class="db-manager-button db-manager-button-primary">Apply</button>
+                        </form>
+                        <p class="db-manager-subtext">Only this database's scoped privileges are changed.</p>
+                        {% else %}<p class="db-manager-muted">Create a non-system MySQL account first.</p>{% endif %}
+                        </div>
+                    </details>
+                    <form method="post" action="/mysql/drop-db" onsubmit="return confirm('Permanently drop database {{ database.name }} and all of its data? Create a backup first if you need to keep it.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="db_name" value="{{ database.name }}">
+                        <button type="submit" class="db-manager-button db-manager-button-danger">Delete</button>
+                    </form>
+                    {% else %}<span class="db-manager-muted">Protected</span>{% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody></table>
+        </div>
+        <p id="database-empty-results" class="db-manager-empty" hidden>No databases match this filter.</p>
+        <div class="db-manager-pagination">
+            <span id="database-page-label"></span>
+            <button type="button" class="db-manager-button" id="database-prev">Previous</button>
+            <button type="button" class="db-manager-button" id="database-next">Next</button>
+            <label>Rows <select id="database-page-size"><option>20</option><option>50</option><option>100</option></select></label>
+        </div>
+        {% else %}<p style="font-size:12px;color:#9ca3af">No database names returned. Check the administrator login above.</p>{% endif %}
+    </section>
+    <section class="db-manager-card">
+        <details class="db-manager-disclosure" id="users">
+        <summary>MySQL accounts and password management ({{ db_users|length }})</summary>
+        <div class="db-manager-disclosure-body" style="overflow:auto">
+        {% if db_users %}
+        <table class="db-manager-table"><thead><tr><th>Username</th><th>Host</th><th>Password</th><th>Action</th></tr></thead><tbody>
+            {% for db_user in db_users %}<tr style="border-top:1px solid #1f2937"><td style="padding:9px">{{ db_user.user }}</td><td style="padding:9px">{{ db_user.host }}</td><td style="padding:9px;color:#9ca3af">Stored by MySQL; cannot be displayed</td><td style="padding:9px">{% if db_user.user.lower() not in ['root','mysql.infoschema','mysql.session','mysql.sys','mariadb.sys'] %}<div class="db-user-actions"><form method="post" action="/mysql/reset-user-password" onsubmit="return confirm('Replace this MySQL user password? Existing applications using it will need the new password.');"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="db_username" value="{{ db_user.user }}"><input type="hidden" name="db_host" value="{{ db_user.host }}"><button type="submit" class="db-action-link">Reset password</button></form><form method="post" action="/mysql/drop-user" onsubmit="return confirm('Drop MySQL login {{ db_user.user }}@{{ db_user.host }}?');"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="db_username" value="{{ db_user.user }}"><input type="hidden" name="db_host" value="{{ db_user.host }}"><button type="submit" class="db-action-link db-action-danger">Delete</button></form></div>{% else %}<span style="color:#6b7280">Protected account</span>{% endif %}</td></tr>{% endfor %}
+        </tbody></table>
+        {% else %}<p class="db-manager-muted">User list unavailable. Check MySQL service status and the administrator login.</p>{% endif %}
+        </div>
+        </details>
+    </section>
+</div>
+<script>
+function generateDbPassword() {
+    const lower = 'abcdefghijkmnopqrstuvwxyz';
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    const symbols = '!@#$%^&*()-_=+';
+    const all = lower + upper + digits + symbols;
+    const bytes = new Uint32Array(24);
+    crypto.getRandomValues(bytes);
+    const password = [
+        lower[bytes[0] % lower.length],
+        upper[bytes[1] % upper.length],
+        digits[bytes[2] % digits.length],
+        symbols[bytes[3] % symbols.length],
+    ];
+    for (let i = 4; i < bytes.length; i++) password.push(all[bytes[i] % all.length]);
+    for (let i = password.length - 1; i > 0; i--) {
+        const random = new Uint32Array(1);
+        crypto.getRandomValues(random);
+        const j = random[0] % (i + 1);
+        [password[i], password[j]] = [password[j], password[i]];
+    }
+    const field = document.getElementById('db-password');
+    field.value = password.join('');
+    field.type = 'text';
+}
+function updateDbAccessFields() {
+    const admin = document.getElementById('db-privilege-scope').value === 'administrator';
+    document.getElementById('db-name').disabled = admin;
+    document.getElementById('db-admin-warning').style.display = admin ? 'block' : 'none';
+}
+function confirmDbAccount() {
+    if (document.getElementById('db-password').value.length < 16) {
+        alert('Use Generate strong password or enter at least 16 characters.');
+        return false;
+    }
+    return document.getElementById('db-privilege-scope').value !== 'administrator'
+        || confirm('This account will have full control over all databases and users. Continue?');
+}
+function setDbPermissionAccount(form) {
+    const account = form.elements.account.value.split('|');
+    if (account.length !== 2) return false;
+    form.elements.db_username.value = account[0];
+    form.elements.db_host.value = account[1];
+    return true;
+}
+const databaseSearch = document.getElementById('database-search');
+const databaseFilter = document.getElementById('database-filter');
+const databasePageSize = document.getElementById('database-page-size');
+const databaseRows = [...document.querySelectorAll('#database-rows tr')];
+let databasePage = 1;
+function filterDatabases() {
+    const query = databaseSearch.value.trim().toLowerCase();
+    const filter = databaseFilter.value;
+    const matches = databaseRows.filter((row) => {
+        const system = row.dataset.system === 'true';
+        return row.dataset.databaseName.includes(query)
+            && (filter === 'all' || (filter === 'system') === system);
+    });
+    const pageSize = Number(databasePageSize.value);
+    const pageCount = Math.max(1, Math.ceil(matches.length / pageSize));
+    databasePage = Math.min(databasePage, pageCount);
+    databaseRows.forEach((row) => {
+        const filteredIndex = matches.indexOf(row);
+        row.hidden = filteredIndex < 0 || filteredIndex < (databasePage - 1) * pageSize
+            || filteredIndex >= databasePage * pageSize;
+    });
+    document.getElementById('database-result-count').textContent =
+        `${matches.length} database${matches.length === 1 ? '' : 's'}`;
+    document.getElementById('database-empty-results').hidden = matches.length !== 0;
+    document.getElementById('database-page-label').textContent =
+        matches.length ? `Page ${databasePage} of ${pageCount} · ${matches.length} total` : 'No results';
+    document.getElementById('database-prev').disabled = databasePage <= 1;
+    document.getElementById('database-next').disabled = databasePage >= pageCount;
+}
+if (databaseSearch && databaseFilter) {
+    databaseSearch.addEventListener('input', filterDatabases);
+    databaseFilter.addEventListener('change', () => { databasePage = 1; filterDatabases(); });
+    databasePageSize.addEventListener('change', () => { databasePage = 1; filterDatabases(); });
+    document.getElementById('database-prev').addEventListener('click', () => { databasePage -= 1; filterDatabases(); });
+    document.getElementById('database-next').addEventListener('click', () => { databasePage += 1; filterDatabases(); });
+    filterDatabases();
+}
+</script>
+{% endblock %}

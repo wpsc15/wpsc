@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}MySQL Configuration{% endblock %}
+{% block heading %}<span><i class="fas fa-database" style="color:#3b82f6;margin-right:8px"></i>MySQL Configuration</span>{% endblock %}
+{% block content %}
+<section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px">
+        <div>
+            <h2 style="font-size:15px;font-weight:600">{{ config_path or "MySQL configuration" }}</h2>
+            <p style="font-size:12px;color:#9ca3af;margin-top:4px">Edit the primary MySQL/MariaDB configuration. A timestamped backup is created before saving.</p>
+        </div>
+        <a href="/mysql" style="color:#93c5fd;text-decoration:none">Back to MySQL</a>
+    </div>
+    {% if flash %}<div style="padding:12px;margin-bottom:12px;border-radius:6px;background:{% if flash.type == 'error' %}#450a0a{% else %}#064e3b{% endif %};color:{% if flash.type == 'error' %}#fca5a5{% else %}#a7f3d0{% endif %}">{{ flash.msg }}</div>{% endif %}
+    {% if error %}<div style="padding:12px;border-radius:6px;background:#450a0a;color:#fca5a5">{{ error }}</div>
+    {% else %}
+    <div style="padding:12px;margin-bottom:12px;border:1px solid #78350f;border-radius:6px;background:#451a03;color:#fcd34d;font-size:12px;line-height:1.6">
+        <strong>Warning:</strong> This edits a live, root-owned database configuration. Invalid settings can prevent MySQL from starting or make databases unavailable. Saving validates the server configuration, creates a backup, and restarts MySQL.
+    </div>
+    <form method="post" action="{{ save_url }}" onsubmit="return confirm('Save this root-level MySQL configuration and restart the database service?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <textarea name="config" required spellcheck="false" style="width:100%;min-height:65vh;background:#030712;border:1px solid #374151;border-radius:8px;padding:16px;color:#d1d5db;font:12px/1.6 monospace;tab-size:4">{{ config }}</textarea>
+        <button type="submit" style="margin-top:12px;padding:9px 16px;border:0;border-radius:6px;background:#2563eb;color:white;font-weight:600;cursor:pointer">Validate and save</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

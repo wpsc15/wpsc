@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebPanel Installer Console</title>
+    <style>
+        body { margin:0; padding:20px; background:#030712; color:#d1d5db; font:13px/1.5 Consolas,monospace; }
+        header { display:flex; justify-content:space-between; gap:12px; color:#93c5fd; border-bottom:1px solid #374151; padding-bottom:12px; }
+        pre { white-space:pre-wrap; overflow-wrap:anywhere; height:calc(100vh - 100px); overflow:auto; }
+        #state { color:#fbbf24; }
+    </style>
+</head>
+<body>
+    <header><span id="title">WebPanel installer console</span><span id="state">Connecting...</span></header>
+    <pre id="output">Waiting for installer output...</pre>
+    <script>
+    const jobId = new URLSearchParams(location.search).get('job_id') || '';
+    const title = document.getElementById('title');
+    const state = document.getElementById('state');
+    const output = document.getElementById('output');
+
+    async function poll() {
+        try {
+            const response = await fetch('/stack/status?job_id=' + encodeURIComponent(jobId));
+            if (!response.ok) throw new Error('Could not read installer status. Sign in to WebPanel and retry.');
+            const job = await response.json();
+            if (!job.id) throw new Error('Installer job not found or no longer available.');
+            title.textContent = `${job.component.toUpperCase()} ${job.version} installer`;
+            state.textContent = job.status.toUpperCase();
+            state.style.color = job.status === 'completed' ? '#34d399' : job.status === 'failed' ? '#f87171' : '#fbbf24';
+            output.textContent = job.output || 'Waiting for installer output...';
+            output.scrollTop = output.scrollHeight;
+            if (job.status === 'running') setTimeout(poll, 1200);
+        } catch (error) {
+            state.textContent = 'ERROR';
+            state.style.color = '#f87171';
+            output.textContent = error.message;
+        }
+    }
+    poll();
+    </script>
+</body>
+</html>

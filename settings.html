@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-user-gear" style="color:#26a65b;font-size:16px"></i>
+    Account Settings
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <section class="settings-topbar">
+        <div class="settings-toolbar">
+            <div class="settings-search">
+                <input type="text" placeholder="Search settings" aria-label="Search settings">
+                <button type="button" aria-label="Search"><i class="fas fa-magnifying-glass"></i></button>
+            </div>
+            <a href="/settings/accounts" class="settings-create-link"><i class="fas fa-user-plus"></i> Create new account</a>
+        </div>
+    </section>
+
+    <div class="settings-grid">
+        <section class="settings-panel">
+            <div class="settings-panel-head">
+                <div class="settings-panel-icon green"><i class="fas fa-network-wired"></i></div>
+                <div>
+                    <h3>Network &amp; Access</h3>
+                    <p>Configure panel networking and access methods</p>
+                </div>
+            </div>
+            <div class="settings-panel-body">
+                <div class="settings-field-row">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Domain</span>
+                        <span class="settings-field-value">panel.example.com</span>
+                    </div>
+                    <button type="button" class="settings-action-button">Modify</button>
+                </div>
+                <div class="settings-field-row">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Panel port</span>
+                        <span class="settings-field-value">7000</span>
+                    </div>
+                    <button type="button" class="settings-action-button">Modify</button>
+                </div>
+                <div class="settings-alert danger">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span>After editing, the panel only be accessed from this domain</span>
+                </div>
+                <div class="settings-field-row">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Security</span>
+                        <span class="settings-field-value">Panel IP whitelist</span>
+                    </div>
+                    <button type="button" class="settings-action-button">Modify</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-panel">
+            <div class="settings-panel-head">
+                <div class="settings-panel-icon green"><i class="fas fa-shield-heart"></i></div>
+                <div>
+                    <h3>Panel SSL</h3>
+                    <p>Configure HTTPS secure connection</p>
+                </div>
+            </div>
+            <div class="settings-panel-body">
+                <div class="settings-toggle-row">
+                    <div class="settings-toggle-copy">
+                        <span class="settings-field-label">SSL certificate</span>
+                    </div>
+                    <label class="settings-toggle">
+                        <input type="checkbox" checked>
+                        <span class="settings-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-certificate-box">
+                    <div class="settings-status-row">
+                        <span class="settings-status success">Valid</span>
+                        <span class="settings-value muted">2007/3650 Day(s)</span>
+                    </div>
+                    <div class="settings-progress-bar"><span style="width: 82%"></span></div>
+                    <div class="settings-metadata-row">
+                        <div>
+                            <span class="settings-meta-label">Domain</span>
+                            <strong>panel.example.com</strong>
+                        </div>
+                        <div>
+                            <span class="settings-meta-label">Issuer</span>
+                            <strong>Let's Encrypt</strong>
+                        </div>
+                        <div>
+                            <span class="settings-meta-label">Expiration Date</span>
+                            <strong>2023-10-16</strong>
+                        </div>
+                        <div>
+                            <span class="settings-meta-label">Days Remaining</span>
+                            <strong>2907 Day(s)</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-panel">
+            <div class="settings-panel-head">
+                <div class="settings-panel-icon green"><i class="fas fa-code"></i></div>
+                <div>
+                    <h3>Advanced Features</h3>
+                    <p>Enable advanced development and API features</p>
+                </div>
+            </div>
+            <div class="settings-panel-body">
+                <div class="settings-toggle-row">
+                    <div class="settings-toggle-copy">
+                        <span class="settings-field-label">Developer mode</span>
+                    </div>
+                    <label class="settings-toggle">
+                        <input type="checkbox">
+                        <span class="settings-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-toggle-row">
+                    <div class="settings-toggle-copy">
+                        <span class="settings-field-label">API</span>
+                    </div>
+                    <label class="settings-toggle">
+                        <input type="checkbox">
+                        <span class="settings-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-api-box">
+                    <span class="settings-meta-label">API secret key</span>
+                    <div class="settings-api-key-row">
+                        <input type="password" value="•••••••••••••••" aria-label="API secret key">
+                        <button type="button" class="settings-action-button small">Show</button>
+                        <button type="button" class="settings-action-button small">Copy</button>
+                    </div>
+                    <p>Please keep your API key secure and do not share it.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-panel">
+            <div class="settings-panel-head">
+                <div class="settings-panel-icon green"><i class="fas fa-lock"></i></div>
+                <div>
+                    <h3>Authentication &amp; Security</h3>
+                    <p>Manage panel login and security settings</p>
+                </div>
+            </div>
+            <div class="settings-panel-body">
+                <form method="post" action="/settings/email" class="settings-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <label>Recovery email
+                        <input type="email" name="email" value="{{ account.email if account else '' }}" maxlength="254" required autocomplete="email">
+                    </label>
+                    <label>Current password to confirm email change
+                        <input type="password" name="current_password" required autocomplete="current-password">
+                    </label>
+                    <button class="service-action service-action-start" type="submit"><i class="fas fa-envelope"></i>Save recovery email</button>
+                </form>
+                <form method="post" action="/settings/password" class="settings-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <label>Current password
+                        <input type="password" name="current_password" required autocomplete="current-password">
+                    </label>
+                    <label>New password
+                        <input type="password" name="new_password" required minlength="12" maxlength="72" autocomplete="new-password">
+                    </label>
+                    <label>Confirm new password
+                        <input type="password" name="confirm_password" required minlength="12" maxlength="72" autocomplete="new-password">
+                    </label>
+                    <button class="service-action service-action-start" type="submit"><i class="fas fa-key"></i>Update password</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="settings-panel">
+            <div class="settings-panel-head">
+                <div class="settings-panel-icon green"><i class="fas fa-user-group"></i></div>
+                <div>
+                    <h3>Account Integration</h3>
+                    <p>Manage cloud account binding</p>
+                </div>
+            </div>
+            <div class="settings-panel-body">
+                <div class="settings-field-row compact">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Bind GitHub account</span>
+                    </div>
+                    <button type="button" class="settings-action-button">Connect</button>
+                </div>
+                <div class="settings-field-row compact">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Most functions rely on cloud services</span>
+                    </div>
+                </div>
+                <div class="settings-account-state boxed">
+                    <span>Not connected</span>
+                    <button type="button" class="settings-action-button">Connect GitHub</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-panel">
+            <div class="settings-panel-head">
+                <div class="settings-panel-icon green"><i class="fas fa-sliders"></i></div>
+                <div>
+                    <h3>Interface Preferences</h3>
+                    <p>Customize panel interface settings</p>
+                </div>
+            </div>
+            <div class="settings-panel-body">
+                <div class="settings-field-row compact">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Menu bar hidden</span>
+                    </div>
+                    <label class="settings-toggle">
+                        <input type="checkbox">
+                        <span class="settings-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-field-row compact">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Hide left menu</span>
+                    </div>
+                    <label class="settings-toggle">
+                        <input type="checkbox">
+                        <span class="settings-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-field-row compact">
+                    <div class="settings-field-copy">
+                        <span class="settings-field-label">Log all</span>
+                    </div>
+                    <button type="button" class="settings-action-button">Modify</button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

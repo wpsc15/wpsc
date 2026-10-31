@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}MySQL Backup and Restore{% endblock %}
+{% block heading %}<span><i class="fas fa-database" style="color:#60a5fa;margin-right:8px"></i>MySQL Backup and Restore</span>{% endblock %}
+{% block content %}
+<div style="display:grid;gap:16px;max-width:1000px">
+    {% if flash %}<div style="padding:12px;border-radius:6px;background:{% if flash.type == 'error' %}#450a0a{% else %}#064e3b{% endif %};color:{% if flash.type == 'error' %}#fca5a5{% else %}#a7f3d0{% endif %}">{{ flash.msg }}</div>{% endif %}
+    <section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:8px">Create a full SQL backup</h2>
+        <p style="font-size:12px;color:#9ca3af;line-height:1.6;margin-bottom:12px">Exports all databases, routines, events, and triggers. The backup is saved under the local WebPanel project directory with owner-only permissions, then downloaded to your browser.</p>
+        <form method="post" action="/mysql/backup/create">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" onclick="this.disabled=true;this.textContent='Creating backup…';this.form.submit()" style="padding:9px 14px;background:#2563eb;color:white;border:0;border-radius:6px;cursor:pointer">Create and download backup</button>
+        </form>
+    </section>
+    <section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:8px">Restore from SQL file</h2>
+        <div style="padding:12px;margin-bottom:12px;border:1px solid #991b1b;border-radius:6px;background:#450a0a;color:#fecaca;font-size:12px;line-height:1.6">
+            <strong>Destructive action:</strong> SQL imports may replace or drop databases and users. Make a fresh backup first, and restore only a trusted SQL file. Maximum upload size: {{ max_restore_size }} MiB.
+        </div>
+        <form method="post" action="/mysql/restore" enctype="multipart/form-data" onsubmit="return confirm('Import this SQL file into the active database server? This can replace or drop existing databases. Make sure you have a backup.');" style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="file" name="backup_file" required accept=".sql" style="padding:8px;background:#030712;color:#d1d5db;border:1px solid #374151;border-radius:6px">
+            <button type="submit" style="padding:9px 14px;background:#b91c1c;color:white;border:0;border-radius:6px;cursor:pointer">Restore SQL backup</button>
+        </form>
+    </section>
+    <section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;overflow:auto">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Saved local backups</h2>
+        {% if backups %}
+        <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#9ca3af"><th style="padding:8px">File</th><th style="padding:8px">Size</th><th style="padding:8px">Action</th></tr></thead><tbody>
+        {% for backup in backups %}<tr style="border-top:1px solid #1f2937"><td style="padding:9px">{{ backup.name }}</td><td style="padding:9px">{{ (backup.stat().st_size / 1048576)|round(2) }} MiB</td><td style="padding:9px"><a href="/mysql/backup/{{ backup.name }}" style="color:#93c5fd">Download</a></td></tr>{% endfor %}
+        </tbody></table>
+        {% else %}<p style="font-size:12px;color:#9ca3af">No backups saved in the project directory yet.</p>{% endif %}
+    </section>
+    <section style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;overflow:auto">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Saved per-database backups</h2>
+        {% if database_backups %}
+        <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#9ca3af"><th style="padding:8px">Backup file</th><th style="padding:8px">Size</th><th style="padding:8px">Action</th></tr></thead><tbody>
+        {% for backup in database_backups %}<tr style="border-top:1px solid #1f2937"><td style="padding:9px">{{ backup.name }}</td><td style="padding:9px">{{ (backup.stat().st_size / 1048576)|round(2) }} MiB</td><td style="padding:9px"><a href="/mysql/backup/database/file/{{ backup.name }}" style="color:#93c5fd">Download</a></td></tr>{% endfor %}
+        </tbody></table>
+        {% else %}<p style="font-size:12px;color:#9ca3af">No per-database backups saved yet.</p>{% endif %}
+    </section>
+    <a href="/mysql" style="color:#93c5fd;text-decoration:none">Back to MySQL</a>
+</div>
+{% endblock %}
