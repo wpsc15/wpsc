@@ -1,0 +1,2 @@
+# wpsc
+Webpanel beta
