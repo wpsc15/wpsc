@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Services{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-gears" style="color:#26a65b;font-size:16px"></i>
+    Service Manager
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="service-manager">
+    <section class="service-manager-intro">
+        <div>
+            <h2>Server services</h2>
+            <p>Monitor and control installed hosting services on this server.</p>
+        </div>
+        <div class="service-manager-count">
+            <strong>{{ services|length }}</strong>
+            <span>supported services</span>
+        </div>
+    </section>
+
+    <div class="service-manager-notice">
+        <i class="fas fa-circle-info"></i>
+        Actions apply immediately to system services. Stopping a database, web server, firewall, or mail service may interrupt hosted applications.
+    </div>
+
+    {% if error %}
+    <section class="service-manager-empty">
+        <i class="fas fa-triangle-exclamation"></i>
+        <h3>Could not load system services</h3>
+        <p>{{ error }}</p>
+    </section>
+    {% elif not services %}
+    <section class="service-manager-empty">
+        <i class="fas fa-server"></i>
+        <h3>No supported services detected</h3>
+        <p>Install a supported service such as Apache, Nginx, MySQL, Docker, FTP, or PHP-FPM to manage it here.</p>
+    </section>
+    {% else %}
+    <div class="service-manager-toolbar">
+        <label for="service-filter"><i class="fas fa-magnifying-glass"></i><span class="sr-only">Filter services</span></label>
+        <input id="service-filter" type="search" placeholder="Filter services..." autocomplete="off">
+        <span>{{ categories|length }} categories</span>
+    </div>
+
+    <div class="service-manager-grid" id="service-grid">
+        {% for service in services %}
+        <article class="service-manager-card" data-service-search="{{ service.name|lower }} {{ service.unit|lower }} {{ service.category|lower }}">
+            <div class="service-manager-card-heading">
+                <div class="service-manager-icon"><i class="fas fa-server"></i></div>
+                <div class="service-manager-title">
+                    <h3>{{ service.name }}</h3>
+                    <span>{{ service.category }} · <code>{{ service.unit }}</code></span>
+                </div>
+                <span class="service-status service-status-{{ service.status|lower }}">
+                    <span aria-hidden="true"></span>{{ service.status|replace('_', ' ')|title }}
+                </span>
+            </div>
+            <div class="service-manager-actions">
+                {% for action, icon in [('start', 'play'), ('restart', 'rotate'), ('stop', 'stop')] %}
+                <form method="post" action="/services/action">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="unit" value="{{ service.unit }}">
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <button class="service-action service-action-{{ action }}" type="submit"
+                            {% if action == 'stop' %}data-confirm="Stop {{ service.name }}? This may interrupt dependent applications."{% endif %}>
+                        <i class="fas fa-{{ icon }}"></i>{{ action|title }}
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    <p class="service-manager-no-results" id="service-no-results" hidden>No matching services.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const serviceFilter = document.getElementById("service-filter");
+if (serviceFilter) {
+    serviceFilter.addEventListener("input", () => {
+        const query = serviceFilter.value.trim().toLowerCase();
+        let visible = 0;
+        document.querySelectorAll(".service-manager-card").forEach((card) => {
+            const matches = card.dataset.serviceSearch.includes(query);
+            card.hidden = !matches;
+            if (matches) visible += 1;
+        });
+        document.getElementById("service-no-results").hidden = visible !== 0;
+    });
+}
+document.querySelectorAll("[data-confirm]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+        if (!window.confirm(button.dataset.confirm)) event.preventDefault();
+    });
+});
+</script>
+{% endblock %}

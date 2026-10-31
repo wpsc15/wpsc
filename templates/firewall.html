@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Firewall{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-shield-halved" style="color:#26a65b;font-size:16px"></i>
+    Firewall
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="service-manager">
+    <section class="service-manager-intro">
+        <div>
+            <h2>UFW firewall</h2>
+            <p>Check firewall status and manage individual TCP/UDP port rules.</p>
+        </div>
+        <div class="service-manager-count"><strong>{{ firewall.status|title }}</strong><span>Firewall status</span></div>
+    </section>
+
+    <div class="service-manager-notice">
+        <i class="fas fa-triangle-exclamation"></i>
+        Firewall changes can disconnect remote access. The panel will not disable an active firewall. Confirm required SSH and WebPanel access rules before enabling UFW.
+    </div>
+
+    {% if firewall.error %}
+    <div class="service-manager-notice service-manager-error"><i class="fas fa-circle-info"></i>{{ firewall.error }}</div>
+    {% endif %}
+
+    {% if firewall.available == 'true' %}
+    <section class="firewall-card">
+        <div class="logs-output-heading"><strong>Firewall control</strong><span>Status: {{ firewall.status }}</span></div>
+        <form method="post" action="/firewall/state" data-confirm="Enable UFW now? Check your SSH and panel access rules first.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="enable">
+            <button class="service-action service-action-start" type="submit"><i class="fas fa-shield-halved"></i>Enable UFW</button>
+        </form>
+    </section>
+
+    <section class="firewall-card">
+        <h3>Add a port rule</h3>
+        <form method="post" action="/firewall/rule" class="firewall-rule-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>Action
+                <select name="action" required><option value="allow">Allow</option><option value="deny">Deny</option></select>
+            </label>
+            <label>Port
+                <input name="port" inputmode="numeric" pattern="[0-9]{1,5}" min="1" max="65535" required placeholder="8080">
+            </label>
+            <label>Protocol
+                <select name="protocol" required><option value="tcp">TCP</option><option value="udp">UDP</option></select>
+            </label>
+            <button class="service-action service-action-start" type="submit"><i class="fas fa-plus"></i>Apply rule</button>
+        </form>
+    </section>
+
+    {% if firewall.rules %}
+    <section class="cron-job-list">
+        <div class="logs-output-heading"><strong>Current rules</strong><span>Live UFW output</span></div>
+        <pre class="logs-output">{{ firewall.rules }}</pre>
+        <form method="post" action="/firewall/rule/remove" class="firewall-rule-form firewall-remove-form" data-confirm="Remove this exact UFW rule? This may expose or block services.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>Remove action
+                <select name="action" required><option value="allow">Allow</option><option value="deny">Deny</option></select>
+            </label>
+            <label>Port
+                <input name="port" inputmode="numeric" pattern="[0-9]{1,5}" min="1" max="65535" required placeholder="8080">
+            </label>
+            <label>Protocol
+                <select name="protocol" required><option value="tcp">TCP</option><option value="udp">UDP</option></select>
+            </label>
+            <button class="service-action service-action-stop" type="submit"><i class="fas fa-trash"></i>Remove exact rule</button>
+        </form>
+    </section>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+        if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+    });
+});
+</script>
+{% endblock %}

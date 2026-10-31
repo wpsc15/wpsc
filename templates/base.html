@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WebPanel{% endblock %} - WebPanel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/panel.css?v=20261031-settings-users">
+    <style>
+        [x-cloak] { display: none !important; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        pre { white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body class="panel-shell">
+
+<!-- Sidebar -->
+<aside class="panel-sidebar">
+    <!-- Logo -->
+    <div class="panel-brand">
+        <div style="display:flex;align-items:center;gap:10px">
+            <div class="panel-brand-icon">
+                <i class="fas fa-server"></i>
+            </div>
+            <div>
+                <div class="panel-brand-name">WebPanel</div>
+                <div class="panel-brand-caption">Server Control</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="panel-nav">
+        <!-- Dashboard -->
+        <a class="panel-nav-link {% if active == 'dashboard' %}active{% endif %}" href="/dashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+        <!-- Database Manager -->
+        <a class="panel-nav-link {% if active == 'mysql' %}active{% endif %}" href="/mysql">
+            <i class="fas fa-database"></i>
+            <span>Database Manager (MySQL)</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'websites' %}active{% endif %}" href="/websites">
+            <i class="fas fa-globe"></i>
+            <span>Websites</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'wp-toolkit' %}active{% endif %}" href="/wp-toolkit">
+            <i class="fab fa-wordpress"></i>
+            <span>WP Toolkit</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'files' %}active{% endif %}" href="/files">
+            <i class="fas fa-folder-open"></i>
+            <span>File Manager</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'stack' %}active{% endif %}" href="/stack">
+            <i class="fas fa-store"></i>
+            <span>App Store</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'services' %}active{% endif %}" href="/services">
+            <i class="fas fa-gears"></i>
+            <span>Service Manager</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'logs' %}active{% endif %}" href="/logs">
+            <i class="fas fa-file-lines"></i>
+            <span>Server Logs</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'cron' %}active{% endif %}" href="/cron">
+            <i class="fas fa-clock"></i>
+            <span>Scheduled Jobs</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'firewall' %}active{% endif %}" href="/firewall">
+            <i class="fas fa-shield-halved"></i>
+            <span>Firewall</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'docker' %}active{% endif %}" href="/docker">
+            <i class="fab fa-docker"></i>
+            <span>Docker</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'audit' %}active{% endif %}" href="/audit">
+            <i class="fas fa-clipboard-list"></i>
+            <span>Activity Log</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'settings' %}active{% endif %}" href="/settings">
+            <i class="fas fa-user-gear"></i>
+            <span>Settings</span>
+        </a>
+        <a class="panel-nav-link {% if active == 'settings-accounts' %}active{% endif %}" href="/settings/accounts">
+            <i class="fas fa-user-plus"></i>
+            <span>Create Account</span>
+        </a>
+        <!-- phpMyAdmin -->
+        <a class="panel-nav-link {% if active == 'phpmyadmin' %}active{% endif %}" href="/php/phpmyadmin">
+            <i class="fas fa-table-columns"></i>
+            <span>phpMyAdmin</span>
+        </a>
+
+        <!-- Divider -->
+        <div class="panel-nav-divider"></div>
+
+        <!-- Apache Config link -->
+        <a class="panel-nav-link panel-nav-secondary" href="/apache/config">
+            <i class="fas fa-file-code"></i>
+            <span>Apache Config</span>
+        </a>
+    </nav>
+
+    <!-- User / Logout -->
+    <div class="panel-user">
+        <div class="panel-user-info">
+            <div class="panel-user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div>
+                <div class="panel-user-name">{{ user }}</div>
+                <div class="panel-user-role">Administrator</div>
+            </div>
+        </div>
+        <a class="panel-nav-link panel-nav-secondary" href="/logout">
+            <i class="fas fa-right-from-bracket"></i>
+            <span>Sign Out</span>
+        </a>
+    </div>
+</aside>
+
+<!-- Main Content Area -->
+<div class="panel-main">
+    <!-- Header -->
+    <header class="panel-topbar">
+        <button class="panel-menu-toggle" type="button" aria-label="Toggle navigation" onclick="document.body.classList.toggle('sidebar-open')">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="panel-page-heading">{% block heading %}Dashboard{% endblock %}</h1>
+        <div class="panel-topbar-meta">
+            <span class="panel-server-chip"><i class="fas fa-server"></i> Linux Server</span>
+            <div class="panel-time">
+                <i class="fas fa-clock"></i>
+                <span id="server-time"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Message -->
+    {% if flash %}
+    <div x-data="{show:true}" x-show="show" x-cloak x-init="setTimeout(()=>show=false, 4000)"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="margin:16px 24px 0;padding:12px 16px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;
+         {% if flash.type == 'success' %}background:#052e16;border:1px solid #16a34a;color:#86efac{% else %}background:#450a0a;border:1px solid #dc2626;color:#fca5a5{% endif %}">
+        <span style="font-size:14px">
+            <i class="fas fa-{% if flash.type == 'success' %}check-circle{% else %}exclamation-circle{% endif %}" style="margin-right:8px"></i>
+            {{ flash.msg }}
+        </span>
+        <button @click="show=false" style="background:none;border:none;color:inherit;cursor:pointer;font-size:20px;line-height:1;opacity:0.7;padding:0 4px">×</button>
+    </div>
+    {% endif %}
+
+    <!-- Page Content -->
+    <main class="panel-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script>
+function updateTime() {
+    var el = document.getElementById('server-time');
+    if (el) el.textContent = new Date().toLocaleString();
+}
+setInterval(updateTime, 1000);
+updateTime();
+document.addEventListener('click', function (event) {
+    if (!document.body.classList.contains('sidebar-open')) return;
+    if (event.target.closest('.panel-sidebar, .panel-menu-toggle')) return;
+    document.body.classList.remove('sidebar-open');
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

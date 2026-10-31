@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Scheduled Jobs{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-clock" style="color:#26a65b;font-size:16px"></i>
+    Scheduled Jobs
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="service-manager">
+    <section class="service-manager-intro">
+        <div>
+            <h2>Scheduled tasks</h2>
+            <p>Create and manage cron jobs owned by WebPanel.</p>
+        </div>
+        <div class="service-manager-count"><strong>{{ jobs|length }}</strong><span>WebPanel jobs</span></div>
+    </section>
+
+    <div class="service-manager-notice">
+        <i class="fas fa-triangle-exclamation"></i>
+        Jobs run as root. Only add commands you trust. WebPanel lists and edits only jobs it created; other root crontab entries are preserved.
+    </div>
+
+    {% if error %}
+    <div class="service-manager-notice service-manager-error"><i class="fas fa-triangle-exclamation"></i>{{ error }}</div>
+    {% else %}
+    <section class="cron-form-card">
+        <h3>Add scheduled job</h3>
+        <form method="post" action="/cron/add" class="cron-job-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label for="cron-schedule-preset">Schedule
+                <select id="cron-schedule-preset" name="schedule">
+                    <option value="*/5 * * * *">Every 5 minutes</option>
+                    <option value="0 * * * *">Hourly</option>
+                    <option value="0 2 * * *" selected>Daily at 02:00</option>
+                    <option value="0 2 * * 0">Weekly on Sunday at 02:00</option>
+                    <option value="0 2 1 * *">Monthly on the 1st at 02:00</option>
+                    <option value="custom">Custom cron expression</option>
+                </select>
+            </label>
+            <div class="cron-custom-schedule" id="cron-custom-schedule" hidden>
+                <label for="cron-custom-expression">Custom schedule
+                    <input id="cron-custom-expression" name="custom_schedule" maxlength="64" placeholder="0 2 * * *" autocomplete="off" disabled required>
+                </label>
+            </div>
+            <span class="cron-schedule-help">Choose a preset or enter a custom five-field cron expression: Minute&nbsp; Hour&nbsp; Day&nbsp; Month&nbsp; Weekday.</span>
+            <label>Command <textarea name="command" required maxlength="1000" rows="2" placeholder="/usr/local/bin/backup.sh"></textarea></label>
+            <button class="service-action service-action-start" type="submit"><i class="fas fa-plus"></i>Add job</button>
+        </form>
+    </section>
+
+    <section class="cron-job-list">
+        <div class="logs-output-heading"><strong>WebPanel-managed jobs</strong><span>{{ jobs|length }} total</span></div>
+        {% if jobs %}
+        <div class="cron-table-wrap">
+            <table class="cron-table">
+                <thead><tr><th>Schedule</th><th>Command</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td><code>{{ job.schedule }}</code></td>
+                        <td><code class="cron-command">{{ job.command }}</code></td>
+                        <td>
+                            <form method="post" action="/cron/delete" data-confirm="Remove this scheduled job?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="job_id" value="{{ job.id }}">
+                                <button class="service-action service-action-stop" type="submit"><i class="fas fa-trash"></i>Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="cron-empty">No WebPanel-managed jobs yet.</div>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const schedulePreset = document.getElementById("cron-schedule-preset");
+const customScheduleField = document.getElementById("cron-custom-schedule");
+const customScheduleInput = document.getElementById("cron-custom-expression");
+
+if (schedulePreset && customScheduleField && customScheduleInput) {
+    schedulePreset.addEventListener("change", () => {
+        const useCustomSchedule = schedulePreset.value === "custom";
+        customScheduleField.hidden = !useCustomSchedule;
+        customScheduleInput.disabled = !useCustomSchedule;
+    });
+}
+
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+        if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+    });
+});
+</script>
+{% endblock %}

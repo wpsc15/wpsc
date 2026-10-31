@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Apache{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-globe" style="color:#f97316;font-size:16px"></i>
+    Apache Web Server
+</span>
+{% endblock %}
+
+{% block content %}
+<!-- Status + Control Row -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+
+    <!-- Status Card -->
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h3 style="font-size:15px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-info-circle" style="color:#3b82f6"></i>
+            Service Status
+        </h3>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span style="font-size:14px;font-weight:600;padding:6px 16px;border-radius:20px;
+                {% if status.running %}background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)
+                {% else %}background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3){% endif %}">
+                {% if status.running %}● Running{% else %}● Stopped{% endif %}
+            </span>
+            <span style="font-size:12px;color:#6b7280">{{ status.status }}</span>
+        </div>
+        <div style="font-size:13px;color:#9ca3af;margin-bottom:6px">
+            <i class="fas fa-tag" style="margin-right:6px;color:#4b5563"></i>
+            <strong>Version:</strong> {{ status.version }}
+        </div>
+        <div style="font-size:13px;color:#9ca3af">
+            <i class="fas fa-sitemap" style="margin-right:6px;color:#4b5563"></i>
+            <strong>Enabled Sites:</strong> {{ status.enabled_sites|length }}
+        </div>
+    </div>
+
+    <!-- Control Actions Card -->
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+        <h3 style="font-size:15px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-sliders" style="color:#fbbf24"></i>
+            Service Control
+        </h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <form method="post" action="/apache/action">
+                <input type="hidden" name="action" value="start">
+                <button type="submit" style="width:100%;background:#065f46;color:#6ee7b7;border:1px solid #064e3b;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                    <i class="fas fa-play"></i> Start
+                </button>
+            </form>
+            <form method="post" action="/apache/action">
+                <input type="hidden" name="action" value="stop">
+                <button type="submit" style="width:100%;background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+            </form>
+            <form method="post" action="/apache/action">
+                <input type="hidden" name="action" value="restart">
+                <button type="submit" style="width:100%;background:#1e3a5f;color:#93c5fd;border:1px solid #1e40af;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                    <i class="fas fa-rotate"></i> Restart
+                </button>
+            </form>
+            <form method="post" action="/apache/action">
+                <input type="hidden" name="action" value="reload">
+                <button type="submit" style="width:100%;background:#1c1917;color:#d6d3d1;border:1px solid #44403c;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                    <i class="fas fa-arrows-rotate"></i> Reload
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Virtual Hosts -->
+<div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;margin-bottom:24px">
+    <h3 style="font-size:15px;font-weight:600;color:#f9fafb;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-globe-americas" style="color:#10b981"></i>
+        Virtual Hosts
+    </h3>
+    {% if status.enabled_sites %}
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+        {% for site in status.enabled_sites %}
+        <span style="background:#1f2937;color:#e5e7eb;padding:6px 14px;border-radius:6px;font-size:13px;font-family:monospace;border:1px solid #374151">
+            <i class="fas fa-check" style="color:#10b981;margin-right:6px;font-size:11px"></i>{{ site }}
+        </span>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#4b5563;font-size:13px">No enabled virtual hosts found or Apache is not installed.</p>
+    {% endif %}
+
+    {% if status.available_sites %}
+    <div style="margin-top:12px">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:8px">Available (not enabled):</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+            {% for site in status.available_sites %}
+            {% if site not in status.enabled_sites %}
+            <span style="background:#111827;color:#6b7280;padding:5px 12px;border-radius:6px;font-size:12px;font-family:monospace;border:1px solid #1f2937">{{ site }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Logs Section -->
+<div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:600;color:#f9fafb;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-file-lines" style="color:#f97316"></i>
+            Log Viewer
+        </h3>
+        <div style="display:flex;gap:8px">
+            <a href="/apache?log=error" style="text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;
+                {% if log == 'error' %}background:#7c2d12;color:#fed7aa;border:1px solid #9a3412{% else %}background:#1f2937;color:#9ca3af;border:1px solid #374151{% endif %}">
+                <i class="fas fa-triangle-exclamation" style="margin-right:4px"></i>Error Log
+            </a>
+            <a href="/apache?log=access" style="text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;
+                {% if log == 'access' %}background:#1e3a5f;color:#93c5fd;border:1px solid #1e40af{% else %}background:#1f2937;color:#9ca3af;border:1px solid #374151{% endif %}">
+                <i class="fas fa-list" style="margin-right:4px"></i>Access Log
+            </a>
+            <a href="/apache/config" style="text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;background:#1f2937;color:#9ca3af;border:1px solid #374151">
+                <i class="fas fa-file-code" style="margin-right:4px"></i>Config File
+            </a>
+        </div>
+    </div>
+
+    {% if error_log %}
+    <div style="margin-bottom:8px">
+        <div style="font-size:12px;color:#f87171;margin-bottom:8px;font-weight:500">
+            <i class="fas fa-triangle-exclamation" style="margin-right:4px"></i>Error Log (last 100 lines)
+        </div>
+        <pre style="background:#0a0a0a;border:1px solid #1f2937;border-radius:8px;padding:16px;font-size:12px;color:#d1fae5;font-family:'Courier New',monospace;max-height:400px;overflow-y:auto;line-height:1.5">{{ error_log }}</pre>
+    </div>
+    {% elif access_log %}
+    <div>
+        <div style="font-size:12px;color:#93c5fd;margin-bottom:8px;font-weight:500">
+            <i class="fas fa-list" style="margin-right:4px"></i>Access Log (last 100 lines)
+        </div>
+        <pre style="background:#0a0a0a;border:1px solid #1f2937;border-radius:8px;padding:16px;font-size:12px;color:#e5e7eb;font-family:'Courier New',monospace;max-height:400px;overflow-y:auto;line-height:1.5">{{ access_log }}</pre>
+    </div>
+    {% else %}
+    <p style="color:#4b5563;font-size:13px">Select a log above to view its contents.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

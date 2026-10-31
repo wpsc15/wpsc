@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}App Store{% endblock %}
+{% block heading %}<span><i class="fas fa-store" style="color:#26a65b;margin-right:8px"></i>App Store</span>{% endblock %}
+{% block content %}
+<style>
+    .store-page{display:grid;gap:12px;color:#263238}
+    .store-top,.store-panel,.store-alert{border:1px solid #e5e9eb;border-radius:7px;background:#fff}
+    .store-tabs{display:flex;align-items:center;gap:0;padding:0 12px;border-bottom:1px solid #e5e9eb}
+    .store-tab{padding:12px 10px 10px;border:0;border-bottom:2px solid transparent;background:transparent;color:#66737a;font-size:12px;cursor:pointer}
+    .store-tab.active{border-color:#26a65b;color:#168b45;font-weight:600}
+    .store-tab:disabled{color:#a7afb3;cursor:not-allowed}
+    .store-toolbar{display:grid;gap:14px;padding:14px}
+    .store-search-row,.store-recent,.store-filters,.store-view,.store-app-name,.store-app-ops,.store-pagination{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .store-search-row{gap:10px}
+    .store-search{width:min(400px,100%);min-height:34px;padding:7px 10px;border:1px solid #dfe5e7;border-radius:4px;font-size:12px}
+    .store-label{width:55px;color:#78848a;font-size:11px}
+    .store-filter{padding:6px 12px;border:1px solid transparent;border-radius:3px;background:#f0f1f2;color:#46545a;font-size:11px;cursor:pointer}
+    .store-filter.active{border-color:#26a65b;background:#26a65b;color:#fff}
+    .store-count{margin-left:auto;color:#78848a;font-size:11px}
+    .store-recent{min-height:16px;color:#78848a;font-size:11px}
+    .store-recent button{padding:0;border:0;background:none;color:#168b45;font-size:11px;cursor:pointer}
+    .store-update{margin-left:auto;padding:6px 10px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#46545a;font-size:10px;cursor:pointer}
+    .store-toolbar-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .store-view{gap:0;border:1px solid #dfe5e7;border-radius:4px;overflow:hidden}
+    .store-view button{width:31px;height:28px;border:0;background:#fff;color:#78848a;cursor:pointer}
+    .store-view button.active{background:#26a65b;color:#fff}
+    .store-notice{padding:10px 12px;border:1px solid #e1eee5;border-radius:5px;background:#f2faf4;color:#168b45;font-size:11px;line-height:1.5}
+    .store-notice.warning{border-color:#f0dfc0;background:#fff9ed;color:#966617}
+    .store-table-wrap{overflow-x:auto}
+    .store-table{width:100%;border-collapse:collapse;min-width:800px}
+    .store-table th{padding:9px 10px;border-bottom:1px solid #e5e9eb;background:#fafbfb;color:#78848a;font-size:10px;font-weight:600;text-align:left;white-space:nowrap}
+    .store-table td{padding:8px 10px;border-bottom:1px solid #edf0f1;color:#46545a;font-size:11px;vertical-align:middle}
+    .store-table tbody tr:hover{background:#fbfdfb}
+    .store-app-name{gap:8px;color:#263238;font-size:11px;font-weight:600}
+    .store-icon{display:grid;place-items:center;width:22px;height:22px;flex:none;border-radius:4px;background:#edf6f0;color:#168b45}
+    .store-muted{margin-top:3px;color:#8a959a;font-size:10px}
+    .store-status{font-size:10px;font-weight:600}
+    .store-status.installed{color:#219653}.store-status.available{color:#899499}.store-status.unavailable{color:#bd6b46}
+    .store-button{display:inline-flex;align-items:center;justify-content:center;min-height:27px;padding:4px 8px;border:1px solid #dfe5e7;border-radius:4px;background:white;color:#34434a;font-size:10px;text-decoration:none;cursor:pointer}
+    .store-button.primary{border-color:#26a65b;background:#26a65b;color:white}
+    .store-button:disabled{opacity:.55;cursor:not-allowed}
+    .store-version{max-width:190px;min-height:27px;padding:4px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#34434a;font-size:10px}
+    .store-empty{padding:35px 18px;text-align:center;color:#8a959a;font-size:12px}
+    .store-pagination{justify-content:flex-end;padding:9px 12px;color:#78848a;font-size:10px}
+    .store-pagination button,.store-pagination select,.store-pagination input{min-height:26px;padding:3px 7px;border:1px solid #dfe5e7;border-radius:4px;background:#fff;color:#46545a;font-size:10px}
+    .store-pagination button:disabled{opacity:.5;cursor:not-allowed}
+    .store-pagination input{width:48px}
+    .store-panel.is-grid .store-table{min-width:0;border-collapse:separate}
+    .store-panel.is-grid .store-table thead{display:none}
+    .store-panel.is-grid .store-table tbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:12px}
+    .store-panel.is-grid .store-table tbody tr[data-category]{display:grid;align-content:start;border:1px solid #e7ebed;border-radius:5px;background:#fff}
+    .store-panel.is-grid .store-table tbody tr[data-category] td{display:block;border:0;padding:6px 10px}
+    .store-panel.is-grid .store-table tbody tr[data-category] td:first-child{padding-top:11px}
+    .store-panel.is-grid .store-table tbody tr[data-category] td:nth-child(2),.store-panel.is-grid .store-table tbody tr[data-category] td:nth-child(4){display:none}
+    .store-panel.is-grid .store-table tbody tr[data-category] td:last-child{padding-bottom:11px}
+    .store-job{padding:12px}
+    .store-job h2{margin:0 0 7px;font-size:12px}
+    .store-job-summary{color:#78848a;font-size:11px}
+    .store-output{max-height:180px;overflow:auto;margin:9px 0 0;padding:10px;border:1px solid #e5e9eb;border-radius:5px;background:#f8f9f9;color:#34434a;font-size:10px;white-space:pre-wrap}
+    @media(max-width:620px){.store-label{width:100%}.store-count{width:100%;margin-left:0}.store-toolbar-bottom{align-items:flex-start}.store-update{margin-left:0}}
+</style>
+
+{% set installed_count = apps|selectattr('installed')|list|length %}
+{% set deployment_count = apps|selectattr('category', 'equalto', 'Deployment')|list|length %}
+{% set tools_count = apps|selectattr('category', 'equalto', 'Tools')|list|length %}
+{% set recent_app = apps|selectattr('component', 'equalto', job.component)|first %}
+<div class="store-page">
+    {% if not options.supported %}
+    <div class="store-alert store-notice warning">One-click installation is currently supported on Debian and Ubuntu only. The catalog below shows the managed applications.</div>
+    {% elif options.error %}
+    <div class="store-alert store-notice warning">Could not read available package versions: {{ options.error }}</div>
+    {% endif %}
+
+    <section class="store-top">
+        <div class="store-tabs" role="tablist" aria-label="App catalog source">
+            <button type="button" class="store-tab active" role="tab" aria-selected="true">Official Apps</button>
+            <button type="button" class="store-tab" disabled title="Third-party plugin installation is not supported">Third-party Plug-ins</button>
+        </div>
+        <div class="store-toolbar">
+            <div class="store-search-row">
+                <label class="store-label" for="store-search">Search App</label>
+                <input class="store-search" id="store-search" type="search" placeholder="Search application name, category, or description">
+                <button class="store-update" type="button"><i class="fas fa-rotate-right"></i> Update App List</button>
+            </div>
+            <div class="store-recent">
+                <span>Recently used</span>
+                {% if job.status != 'idle' and recent_app %}
+                <button type="button" data-recent-component="{{ recent_app.component }}"><i class="fas {{ recent_app.icon }}"></i> {{ recent_app.name }}</button>
+                <span>({{ job.status }})</span>
+                {% else %}
+                <span>No recent installs</span>
+                {% endif %}
+            </div>
+            <div class="store-toolbar-bottom">
+            <div class="store-filters" role="group" aria-label="Filter apps">
+                <span class="store-label">App Sort</span>
+                <button class="store-filter active" type="button" data-store-filter="all">All</button>
+                <button class="store-filter" type="button" data-store-filter="installed">Installed ({{ installed_count }})</button>
+                <button class="store-filter" type="button" data-store-filter="Deployment">Deployment ({{ deployment_count }})</button>
+                <button class="store-filter" type="button" data-store-filter="Tools">Tools ({{ tools_count }})</button>
+            </div>
+                <div class="store-view" role="group" aria-label="App display mode">
+                    <button class="active" type="button" data-store-view="list" aria-label="List view" title="List view"><i class="fas fa-list"></i></button>
+                    <button type="button" data-store-view="grid" aria-label="Grid view" title="Grid view"><i class="fas fa-grip"></i></button>
+                </div>
+            </div>
+            <span class="store-count" id="store-count">{{ apps|length }} apps</span>
+        </div>
+    </section>
+
+    <div class="store-notice"><i class="fas fa-circle-info"></i> Open-source software from your configured Debian/Ubuntu repositories. Package versions and installation availability are checked on this server.</div>
+
+    <section class="store-panel" id="store-panel">
+        <div class="store-table-wrap">
+            <table class="store-table">
+                <thead><tr><th>Software name</th><th>Developer</th><th>Instructions</th><th>Price</th><th>Location</th><th>Status</th><th>Operate</th></tr></thead>
+                <tbody id="store-rows">
+                {% for app in apps %}
+                <tr data-category="{{ app.category }}" data-installed="{{ 'true' if app.installed else 'false' }}" data-component="{{ app.component }}" data-search="{{ (app.name ~ ' ' ~ app.category ~ ' ' ~ app.developer ~ ' ' ~ app.component)|lower }}">
+                    <td><div class="store-app-name"><span class="store-icon"><i class="fas {{ app.icon }}"></i></span>{{ app.name }}</div>
+                        <div class="store-muted">{% if app.installed %}{{ app.installed_version }} · Installed{% else %}{{ app.category }} · Not installed{% endif %}</div></td>
+                    <td>Official OS repository</td>
+                    <td>
+                        {% if app.component == 'apache' %}Web server for Apache virtual hosts.
+                        {% elif app.component == 'mysql' %}MySQL database server.
+                        {% elif app.component == 'php' %}PHP-FPM runtime and common extensions.
+                        {% elif app.component == 'phpmyadmin' %}Browser-based MySQL administration.
+                        {% elif app.component == 'docker' %}Docker container engine.
+                        {% elif app.component == 'nginx' %}Alternative web server; may conflict with Apache on ports 80 and 443.
+                        {% elif app.component == 'redis' %}In-memory data store and cache.
+                        {% elif app.component == 'nodejs' %}JavaScript runtime for server-side applications.
+                        {% elif app.component == 'memcached' %}In-memory caching service.
+                        {% elif app.component == 'git' %}Distributed source-control client.
+                        {% elif app.component == 'composer' %}Dependency manager for PHP projects.
+                        {% elif app.component == 'certbot' %}Let's Encrypt certificate automation and renewal tools.
+                        {% elif app.component == 'htop' %}Interactive process and resource monitor.
+                        {% elif app.component == 'fail2ban' %}Authentication log monitor; configure jails before relying on it.
+                        {% elif app.component == 'unzip' %}Extract ZIP archives from the command line.
+                        {% elif app.component == 'postgresql' %}Relational database server and database tools.
+                        {% elif app.component == 'sqlite' %}Lightweight embedded SQL database and command-line client.
+                        {% elif app.component == 'supervisor' %}Process control system for long-running services.
+                        {% elif app.component == 'rabbitmq' %}Message broker for application queues.
+                        {% elif app.component == 'varnish' %}HTTP reverse-proxy cache for web applications.
+                        {% elif app.component == 'haproxy' %}TCP and HTTP load balancer; check port conflicts before starting it.
+                        {% elif app.component == 'java' %}Headless OpenJDK runtime for Java applications.
+                        {% elif app.component == 'go' %}Go compiler and standard development tools.
+                        {% elif app.component == 'ruby' %}Ruby language runtime.
+                        {% elif app.component == 'rsync' %}File synchronization and transfer utility.
+                        {% elif app.component == 'curl' %}Command-line URL transfer utility.
+                        {% elif app.component == 'wget' %}Non-interactive network file downloader.
+                        {% elif app.component == 'nano' %}Small terminal text editor.
+                        {% elif app.component == 'vim' %}Terminal text editor.
+                        {% elif app.component == 'clamav' %}Command-line antivirus scanner; update virus definitions before scanning.
+                        {% else %}Server application from the OS repository{% endif %}
+                        {% if app.official_url %}<div style="margin-top:5px"><a class="site-dialog-link" href="{{ app.official_url }}" target="_blank" rel="noopener noreferrer">Official docs <i class="fas fa-arrow-up-right-from-square"></i></a></div>{% endif %}
+                    </td>
+                    <td>Free</td>
+                    <td><code>{{ app.location }}</code></td>
+                    <td><span class="store-status {{ 'installed' if app.installed else ('available' if app.available else 'unavailable') }}">{{ 'Update available' if app.update_available else ('Installed' if app.installed else ('Available' if app.available else 'Unavailable')) }}</span></td>
+                    <td><div class="store-app-ops">
+                        {% if app.installed %}
+                        <a class="store-button" href="{{ app.config_url }}">Setting</a>
+                        {% if app.update_available %}
+                        <form class="component-form" data-component="{{ app.component }}" data-action="update" style="display:flex;align-items:center;gap:5px">
+                            <input type="hidden" name="version" value="{{ app.update_version }}">
+                            <button type="submit" class="store-button primary install-button">Update</button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                        {% if app.available and (not app.installed or app.component == 'php') %}
+                        <form class="component-form" data-component="{{ app.component }}" data-action="install" style="display:flex;align-items:center;gap:5px">
+                            <select class="store-version" name="version" aria-label="Version for {{ app.name }}" required>
+                                {% for version in app.versions %}<option value="{{ version }}">{{ version }}</option>{% endfor %}
+                            </select>
+                            <button type="submit" class="store-button primary install-button">{{ 'Install another' if app.component == 'php' and app.installed else ('Reinstall' if app.installed else 'Install') }}</button>
+                        </form>
+                        {% elif app.installed and not app.update_available %}
+                        <span class="store-muted">Up to date</span>
+                        {% elif app.available %}
+                        <span class="store-muted">Already installed</span>
+                        {% else %}
+                        <span class="store-muted">No repository version</span>
+                        {% endif %}
+                        </div></td>
+                </tr>
+                {% endfor %}
+                <tr id="store-empty" hidden><td colspan="7" class="store-empty">No applications match this filter.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="store-pagination" id="store-pagination">
+            <button type="button" data-page-action="previous" aria-label="Previous page"><i class="fas fa-chevron-left"></i></button>
+            <span id="store-page-number">1 / 1</span>
+            <button type="button" data-page-action="next" aria-label="Next page"><i class="fas fa-chevron-right"></i></button>
+            <label for="store-page-size">Rows</label>
+            <select id="store-page-size" aria-label="Rows per page"><option>20</option><option>50</option><option>100</option></select>
+            <label for="store-page-goto">Go to</label>
+            <input id="store-page-goto" type="number" min="1" value="1" aria-label="Go to page">
+            <span id="store-total">Total: {{ apps|length }}</span>
+        </div>
+    </section>
+
+    <aside class="store-alert store-notice warning">System package installations can affect running services. WebPanel must run as root. Back up important data first. Uninstall, third-party plug-ins, and paid software are not provided here.</aside>
+
+    <section class="store-panel store-job">
+        <h2>Most recent install</h2>
+        <div class="store-job-summary" id="job-summary">{{ job.component|upper }} {{ job.version }} — {{ job.status if job.status != 'idle' else 'No installation started in this session' }}</div>
+        <pre class="store-output" id="job-output">{{ job.output or "Choose an app to start an installer and view its progress here." }}</pre>
+    </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let activeJobId = {{ job.id|tojson }};
+const jobOutput = document.getElementById('job-output');
+const jobSummary = document.getElementById('job-summary');
+
+async function refreshInstallStatus() {
+    if (!activeJobId) return;
+    try {
+        const response = await fetch('/stack/status?job_id=' + encodeURIComponent(activeJobId));
+        if (!response.ok) throw new Error('Could not read installation status.');
+        const job = await response.json();
+        jobSummary.textContent = `${job.component.toUpperCase()} ${job.version} — ${job.status}`;
+        jobOutput.textContent = job.output || 'Waiting for installer output...';
+        jobOutput.scrollTop = jobOutput.scrollHeight;
+        if (job.status === 'running') setTimeout(refreshInstallStatus, 1500);
+    } catch (error) {
+        jobSummary.textContent = error.message;
+    }
+}
+
+document.querySelectorAll('.component-form').forEach(form => {
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const component = form.dataset.component;
+        const version = form.elements.version.value;
+        const action = form.dataset.action || 'install';
+        if (action === 'update' && !confirm(`Update ${component.toUpperCase()} to ${version}? The package may restart its service.`)) return;
+        const popup = window.open('about:blank', 'webpanel-install-terminal', 'popup,width=900,height=650');
+        if (!popup) {
+            alert('Allow popups for WebPanel, then try again.');
+            return;
+        }
+        const button = form.querySelector('.install-button');
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Starting...';
+        try {
+            const body = new FormData();
+            body.set('component', component);
+            body.set('version', version);
+            body.set('csrf_token', {{ csrf_token|tojson }});
+            const response = await fetch('/stack/install', {method: 'POST', body});
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Installation could not start.');
+            activeJobId = result.job_id;
+            popup.location = '/stack/terminal?job_id=' + encodeURIComponent(activeJobId);
+            jobSummary.textContent = `${action === 'update' ? 'Updating' : 'Installing'} ${component.toUpperCase()} ${version} — running`;
+            jobOutput.textContent = 'Installer started. See the popup for live output.';
+            refreshInstallStatus();
+        } catch (error) {
+            popup.document.body.textContent = error.message;
+            jobSummary.textContent = error.message;
+            button.disabled = false;
+            button.textContent = originalLabel;
+        }
+    });
+});
+
+const filters = [...document.querySelectorAll('[data-store-filter]')];
+const search = document.getElementById('store-search');
+const appRows = [...document.querySelectorAll('#store-rows tr[data-category]')];
+const emptyRow = document.getElementById('store-empty');
+const storeCount = document.getElementById('store-count');
+const pageNumber = document.getElementById('store-page-number');
+const pageSizeSelect = document.getElementById('store-page-size');
+const pageGoto = document.getElementById('store-page-goto');
+const previousPage = document.querySelector('[data-page-action="previous"]');
+const nextPage = document.querySelector('[data-page-action="next"]');
+const storePanel = document.getElementById('store-panel');
+let selectedFilter = 'all';
+let currentPage = 1;
+function filterApps() {
+    const query = search.value.trim().toLowerCase();
+    const filteredRows = appRows.filter(row => {
+        const categoryMatch = selectedFilter === 'all'
+            || (selectedFilter === 'installed' ? row.dataset.installed === 'true' : row.dataset.category === selectedFilter);
+        return categoryMatch && row.dataset.search.includes(query);
+    });
+    const pageSize = Number(pageSizeSelect.value);
+    const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+    currentPage = Math.min(currentPage, pageCount);
+    const start = (currentPage - 1) * pageSize;
+    const pageRows = new Set(filteredRows.slice(start, start + pageSize));
+    appRows.forEach(row => { row.hidden = !pageRows.has(row); });
+    emptyRow.hidden = filteredRows.length > 0;
+    storeCount.textContent = `${filteredRows.length} matching apps`;
+    pageNumber.textContent = `${currentPage} / ${pageCount}`;
+    pageGoto.value = currentPage;
+    previousPage.disabled = currentPage <= 1;
+    nextPage.disabled = currentPage >= pageCount;
+    document.getElementById('store-total').textContent = `Total: ${filteredRows.length}`;
+}
+filters.forEach(button => button.addEventListener('click', () => {
+    selectedFilter = button.dataset.storeFilter;
+    currentPage = 1;
+    filters.forEach(filter => filter.classList.toggle('active', filter === button));
+    filterApps();
+}));
+search.addEventListener('input', () => { currentPage = 1; filterApps(); });
+pageSizeSelect.addEventListener('change', () => { currentPage = 1; filterApps(); });
+previousPage.addEventListener('click', () => { currentPage -= 1; filterApps(); });
+nextPage.addEventListener('click', () => { currentPage += 1; filterApps(); });
+pageGoto.addEventListener('change', () => {
+    const requestedPage = Number(pageGoto.value);
+    if (Number.isInteger(requestedPage) && requestedPage > 0) currentPage = requestedPage;
+    filterApps();
+});
+document.querySelectorAll('[data-store-view]').forEach(button => {
+    button.addEventListener('click', () => {
+        storePanel.classList.toggle('is-grid', button.dataset.storeView === 'grid');
+        document.querySelectorAll('[data-store-view]').forEach(view => {
+            const active = view === button;
+            view.classList.toggle('active', active);
+            view.setAttribute('aria-pressed', String(active));
+        });
+    });
+});
+document.querySelector('[data-recent-component]')?.addEventListener('click', event => {
+    const component = event.currentTarget.dataset.recentComponent;
+    selectedFilter = 'all';
+    filters.forEach(filter => filter.classList.toggle('active', filter.dataset.storeFilter === 'all'));
+    search.value = component;
+    currentPage = 1;
+    filterApps();
+});
+document.querySelector('.store-update').addEventListener('click', () => window.location.reload());
+filterApps();
+if (activeJobId && {{ 'true' if job.status == 'running' else 'false' }}) refreshInstallStatus();
+</script>
+{% endblock %}

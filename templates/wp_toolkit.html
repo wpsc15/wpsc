@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}WP Toolkit{% endblock %}
+{% block heading %}<span><i class="fab fa-wordpress" style="color:#26a65b;margin-right:8px"></i>WP Toolkit</span>{% endblock %}
+{% block content %}
+{% set total_plugins = namespace(value=0) %}
+{% set total_themes = namespace(value=0) %}
+{% set online_count = namespace(value=0) %}
+{% set versions = namespace(value=[]) %}
+{% for site in wordpress_sites %}
+    {% set total_plugins.value = total_plugins.value + site.plugin_count %}
+    {% set total_themes.value = total_themes.value + site.theme_count %}
+    {% if site.is_up %}{% set online_count.value = online_count.value + 1 %}{% endif %}
+    {% if site.version not in versions.value %}{% set _ = versions.value.append(site.version) %}{% endif %}
+{% endfor %}
+<style>
+    .wp-page{display:grid;gap:12px;color:#263238}
+    .wp-card{background:#fff;border:1px solid #e5e9eb;border-radius:8px}
+    .wp-tabs,.wp-tools,.wp-toolbar,.wp-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .wp-tabs{padding:0 12px;border-bottom:1px solid #e5e9eb}
+    .wp-tab{padding:12px 10px 10px;border-bottom:2px solid transparent;color:#65737a;font-size:12px;text-decoration:none}
+    .wp-tab.active{border-color:#26a65b;color:#168b45;font-weight:600}
+    .wp-toolbar{justify-content:space-between;padding:11px 12px}
+    .wp-tools{gap:6px}
+    .wp-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:6px 10px;border:1px solid #dfe5e7;border-radius:5px;background:#fff;color:#34434a;font-size:11px;text-decoration:none;cursor:pointer}
+    .wp-button.primary{background:#26a65b;border-color:#26a65b;color:#fff}
+    .wp-button.disabled{color:#a6afb3;background:#f8f9f9;cursor:not-allowed}
+    .wp-status{font-size:11px;color:#78848a}
+    .wp-status:before{content:"";display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:#26a65b}
+    .wp-table-wrap{overflow-x:auto}
+    .wp-table{width:100%;border-collapse:collapse;white-space:nowrap}
+    .wp-table th{padding:10px 11px;border-bottom:1px solid #e5e9eb;background:#fafbfb;color:#78848a;font-size:10px;font-weight:600;text-align:left}
+    .wp-table td{padding:10px 11px;border-bottom:1px solid #edf0f1;font-size:11px;vertical-align:middle}
+    .wp-table tr:last-child td{border-bottom:0}
+    .wp-name{color:#168b45;font-size:12px;font-weight:600;text-decoration:none}
+    .wp-sub{margin-top:4px;color:#8a959a;font-size:10px}
+    .wp-muted{color:#8a959a}
+    .wp-status-up{color:#219653}.wp-status-down{color:#df5353}.wp-status-wait{color:#899499}
+    .wp-actions{display:flex;align-items:center;gap:4px}
+    .wp-actions .wp-button{min-height:26px;padding:4px 7px;font-size:10px}
+    .wp-note{padding:10px 13px;border-top:1px solid #edf0f1;color:#78848a;font-size:10px;line-height:1.55}
+    .wp-install{padding:12px 14px}
+    .wp-install summary{color:#263238;font-size:12px;font-weight:600;cursor:pointer}
+    .wp-install p{margin:8px 0;color:#78848a;font-size:11px}
+    .wp-form{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px;max-width:560px}
+    .wp-form input{min-height:34px;padding:7px 9px;border:1px solid #dfe5e7;border-radius:5px}
+    .wp-summary{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}
+    .wp-stat{padding:12px 14px}
+    .wp-stat-label{color:#78848a;font-size:10px}
+    .wp-stat-value{margin-top:6px;color:#263238;font-size:20px;font-weight:650}
+    .wp-empty{padding:30px;text-align:center;color:#899499}
+    .wp-panel-message{padding:22px;color:#78848a;font-size:12px;line-height:1.7}
+    .wp-dialog-backdrop{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:18px;background:rgb(24 34 39 / 45%)}
+    .wp-dialog-backdrop[hidden]{display:none}
+    .wp-dialog{width:min(650px,100%);max-height:min(90vh,760px);overflow:auto;background:#fff;border-radius:8px;box-shadow:0 18px 60px rgb(20 30 35 / 25%)}
+    .wp-dialog-header{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e8ecee}
+    .wp-dialog-title{font-size:14px;font-weight:600}
+    .wp-dialog-close{border:0;background:transparent;color:#899499;font-size:22px;cursor:pointer}
+    .wp-dialog-tabs{display:flex;gap:0;padding:0 14px;border-bottom:1px solid #e8ecee}
+    .wp-dialog-tab{padding:11px 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#68757b;font-size:11px}
+    .wp-dialog-tab.active{border-color:#26a65b;color:#168b45}
+    .wp-dialog-tab:disabled{color:#b4bdc1}
+    .wp-dialog-content{display:grid;gap:11px;padding:17px 18px 20px}
+    .wp-field-row{display:grid;grid-template-columns:112px minmax(0,1fr) 120px;align-items:center;gap:9px}
+    .wp-php-row{grid-template-columns:80px minmax(0,1fr) 72px minmax(0,1fr)}
+    .wp-field-row>label,.wp-field-label{color:#46545a;font-size:11px}
+    .wp-dialog-input{width:100%;min-height:34px;padding:7px 9px;border:1px solid #dfe5e7;border-radius:6px;color:#34434a;font-size:11px}
+    .wp-inline-check{display:flex;align-items:center;gap:5px;color:#46545a;font-size:10px}
+    .wp-field-help{grid-column:2/4;color:#9aa3a7;font-size:10px}
+    .wp-more-settings{grid-column:2/4;color:#607078;font-size:11px}
+    .wp-more-settings summary{cursor:pointer}
+    .wp-more-settings p{margin:8px 0;color:#849096;line-height:1.5}
+    .wp-dialog-footer{display:flex;justify-content:flex-end;gap:7px;padding:12px 16px;border-top:1px solid #e8ecee;background:#fafbfb}
+    .wp-setup-result{padding:13px 15px;border:1px solid #b9e2c8;border-radius:7px;background:#f1fbf4;color:#245a38;font-size:11px;line-height:1.6}
+    .wp-setup-result code{padding:2px 4px;border-radius:3px;background:#e2f2e7}
+    @media(max-width:850px){.wp-summary{grid-template-columns:repeat(2,minmax(110px,1fr))}}
+    @media(max-width:520px){.wp-toolbar{align-items:flex-start;flex-direction:column}.wp-form{grid-template-columns:1fr}}
+    @media(max-width:520px){.wp-field-row{grid-template-columns:1fr;gap:5px}.wp-field-help,.wp-more-settings{grid-column:1}.wp-dialog-tabs{overflow-x:auto}.wp-dialog-tab{white-space:nowrap}}
+</style>
+
+<div class="wp-page">
+    <section class="wp-card">
+        <nav class="wp-tabs" aria-label="WordPress management mode">
+            <a class="wp-tab {{ 'active' if view != 'remote' else '' }}" href="/wp-toolkit">Local Manage</a>
+            <a class="wp-tab {{ 'active' if view == 'remote' else '' }}" href="/wp-toolkit?view=remote">Remote Manage</a>
+        </nav>
+        <div class="wp-toolbar">
+            <div class="wp-tools">
+                {% if can_install %}
+                <button class="wp-button primary" type="button" onclick="openWpDialog()"><i class="fas fa-plus"></i> Add WordPress</button>
+                {% else %}
+                <button class="wp-button disabled" type="button" title="WebPanel must run as root to install WordPress">Add WordPress</button>
+                {% endif %}
+                <button class="wp-button disabled" type="button" title="Local migration is not implemented yet">Migrate Site</button>
+                <button class="wp-button disabled" type="button" title="Remote panel credentials and migration support are not configured">Other Panel Migrate</button>
+                <button class="wp-button disabled" type="button" title="WordPress plugin/theme sets are not implemented yet">WP Sets</button>
+                <button class="wp-button disabled" type="button" title="Site-to-site copy is not implemented yet">Data Copy</button>
+                <a class="wp-button" href="/wp-toolkit?view=statistics"><i class="fas fa-chart-column"></i> Statistics</a>
+            </div>
+            <span class="wp-status">Apache status is managed separately</span>
+        </div>
+    </section>
+
+    {% if view == "remote" %}
+    <section class="wp-card">
+        <div class="wp-panel-message">
+            <h2 style="margin-bottom:6px;color:#263238;font-size:14px">Remote WordPress management</h2>
+            Remote connections are not configured. WebPanel does not store remote server credentials or claim migration support until a secure connection workflow is implemented.
+            <div style="margin-top:12px"><span class="wp-button disabled">Connect remote server · unavailable</span></div>
+        </div>
+    </section>
+    {% elif view == "statistics" %}
+    <section class="wp-summary">
+        <article class="wp-card wp-stat"><div class="wp-stat-label">WordPress installations</div><div class="wp-stat-value">{{ wordpress_sites|length }}</div></article>
+        <article class="wp-card wp-stat"><div class="wp-stat-label">Online monitored</div><div class="wp-stat-value" style="color:#219653">{{ online_count.value }}</div></article>
+        <article class="wp-card wp-stat"><div class="wp-stat-label">Detected plugins</div><div class="wp-stat-value">{{ total_plugins.value }}</div></article>
+        <article class="wp-card wp-stat"><div class="wp-stat-label">Detected themes</div><div class="wp-stat-value">{{ total_themes.value }}</div></article>
+    </section>
+    <section class="wp-card wp-panel-message">
+        <h2 style="margin-bottom:8px;color:#263238;font-size:14px">Core versions</h2>
+        {% if versions.value %}{{ versions.value|join(', ') }}{% else %}No WordPress installations detected.{% endif %}
+        <div style="margin-top:8px"><a class="wp-button" href="/wp-toolkit">Back to Local Manage</a></div>
+    </section>
+    {% else %}
+    {% if setup_credentials %}
+    <section class="wp-setup-result" role="status">
+        <b>WordPress is installed and ready.</b> Save these administrator credentials now; the password is shown only on this response.
+        <div style="margin-top:5px">Login: <a href="{{ setup_credentials.url }}" target="_blank" rel="noopener noreferrer">{{ setup_credentials.url }}</a></div>
+        <div>Username: <code>{{ setup_credentials.admin_username }}</code></div>
+        <div>Password: <code>{{ setup_credentials.admin_password }}</code></div>
+        <div style="margin-top:4px">The admin email, site title, language, and PHP-FPM selection were applied during setup.</div>
+    </section>
+    {% endif %}
+
+    <div id="wp-dialog-backdrop" class="wp-dialog-backdrop" hidden onclick="if(event.target===this)closeWpDialog()">
+        <section class="wp-dialog" role="dialog" aria-modal="true" aria-labelledby="wp-dialog-title">
+            <header class="wp-dialog-header">
+                <h2 class="wp-dialog-title" id="wp-dialog-title">Add site</h2>
+                <button class="wp-dialog-close" type="button" onclick="closeWpDialog()" aria-label="Close dialog">×</button>
+            </header>
+            <nav class="wp-dialog-tabs" aria-label="WordPress site creation mode">
+                <button class="wp-dialog-tab active" type="button">Create site</button>
+                <button class="wp-dialog-tab" type="button" disabled title="Batch installation is not supported">Batch create sites</button>
+                <button class="wp-dialog-tab" type="button" disabled title="Site restoration is not supported">Batch from backup</button>
+                <button class="wp-dialog-tab" type="button" disabled title="Site restoration is not supported">Create from backup</button>
+            </nav>
+            <form method="post" action="/wp-toolkit/install" onsubmit="return confirm('Create and initialize WordPress, a MySQL database, and an Apache site for this domain?');">
+                <div class="wp-dialog-content">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="wp-field-row">
+                        <label for="wp-domain">Domain</label>
+                        <input class="wp-dialog-input" id="wp-domain" name="domain" maxlength="253" placeholder="your-website-domain.com" pattern="[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*" required>
+                        <label class="wp-inline-check" title="Certificate issuance is not configured in WebPanel"><input type="checkbox" disabled> Apply for SSL</label>
+                        <div class="wp-field-help">Point this domain's DNS A record to this server before creating the site.</div>
+                    </div>
+                    <div class="wp-field-row">
+                        <label for="wp-title">Website Title</label>
+                        <input class="wp-dialog-input" id="wp-title" name="site_title" maxlength="120" placeholder="Website title for WordPress" required>
+                    </div>
+                    <div class="wp-field-row">
+                        <label for="wp-email">Email</label>
+                        <input class="wp-dialog-input" id="wp-email" name="admin_email" type="email" maxlength="254" placeholder="Your email address" required>
+                    </div>
+                    <div class="wp-field-row wp-php-row">
+                        <label for="wp-php">PHP version</label>
+                        <select class="wp-dialog-input" id="wp-php" name="php_version">
+                            <option value="">Server default</option>
+                            {% for version in php_versions %}<option value="{{ version }}">PHP {{ version }} FPM</option>{% endfor %}
+                        </select>
+                        <label for="wp-version" class="wp-field-label">WP version</label>
+                        <select class="wp-dialog-input" id="wp-version" name="wordpress_version">
+                            <option value="latest">Latest stable</option>
+                        </select>
+                    </div>
+                    <div class="wp-field-row">
+                        <label for="wp-language">Language</label>
+                        <select class="wp-dialog-input" id="wp-language" name="language">
+                            {% for language in languages %}
+                            <option value="{{ language }}" {{ 'selected' if language == 'en_US' else '' }}>{{ {'en_US':'English (United States)','en_GB':'English (United Kingdom)','es_ES':'Español','fr_FR':'Français','de_DE':'Deutsch','it_IT':'Italiano','pt_BR':'Português (Brasil)','hi_IN':'हिन्दी'}.get(language, language) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="wp-field-row">
+                        <span class="wp-field-label"></span>
+                        <details class="wp-more-settings">
+                            <summary>More settings</summary>
+                            <p>WebPanel creates a unique database and administrator account with a generated password. The password appears once after installation. SSL certificates, backup restore, and remote migrations are not available here.</p>
+                        </details>
+                    </div>
+                </div>
+                <footer class="wp-dialog-footer">
+                    <button class="wp-button" type="button" onclick="closeWpDialog()">Cancel</button>
+                    <button class="wp-button primary" type="submit">Confirm</button>
+                </footer>
+            </form>
+        </section>
+    </div>
+
+    <section class="wp-card">
+        <div class="wp-toolbar" style="border-bottom:1px solid #e5e9eb">
+            <div class="wp-filter">
+                <select id="wp-filter" class="wp-button" aria-label="Filter WordPress sites">
+                    <option value="all">All installations</option><option value="online">Online</option><option value="offline">Offline</option>
+                </select>
+                <input id="wp-search" type="search" class="wp-button" placeholder="Search domain..." aria-label="Search WordPress sites">
+            </div>
+            <span class="wp-sub">{{ wordpress_sites|length }} installation{{ '' if wordpress_sites|length == 1 else 's' }}</span>
+        </div>
+        <div class="wp-table-wrap">
+            <table class="wp-table">
+                <thead><tr>
+                    <th>Site name</th><th>Status</th><th>Backup / restore</th><th>Quick actions</th><th>WordPress</th><th>PHP</th><th>Expiration</th><th>SSL</th><th>Response</th><th>Operation</th>
+                </tr></thead>
+                <tbody id="wp-rows">
+                {% for site in wordpress_sites %}
+                <tr data-status="{{ 'online' if site.is_up else ('offline' if site.last_checked else 'unknown') }}" data-search="{{ (site.name ~ ' ' ~ site.domain)|lower }}">
+                    <td><a class="wp-name" href="{{ site.url if site.url else site.admin_url }}" target="_blank" rel="noopener noreferrer">{{ site.name }} <i class="fas fa-arrow-up-right-from-square" style="font-size:9px"></i></a><div class="wp-sub">{{ site.domain }}<br>{{ site.root }}</div></td>
+                    <td>{% if site.is_up %}<span class="wp-status-up">● Active</span><div class="wp-sub">HTTP {{ site.status_code or 'OK' }}</div>{% elif site.last_checked %}<span class="wp-status-down">● Down</span><div class="wp-sub">HTTP {{ site.status_code or 'Connection failed' }}</div>{% else %}<span class="wp-status-wait">Not monitored</span>{% endif %}</td>
+                    <td>
+                        <form method="post" action="/wp-toolkit/backup/{{ site.domain }}" onsubmit="return confirm('Create an archive of this WordPress site files and database?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button class="wp-button" type="submit"><i class="fas fa-cloud-arrow-down"></i> {{ site.backups|length }} Backup</button>
+                        </form>
+                        {% if site.backups %}<div class="wp-sub"><a href="/wp-toolkit/backup/download/{{ site.backups[0].name }}">Download latest</a></div>{% endif %}
+                    </td>
+                    <td><div class="wp-actions">
+                        <a class="wp-button" href="/files?path={{ site.root|urlencode }}" title="Open site files"><i class="fas fa-folder-open"></i></a>
+                        <a class="wp-button" href="/apache/vhost/{{ site.domain|urlencode }}" title="Apache configuration"><i class="fas fa-sliders"></i></a>
+                        <a class="wp-button" href="/apache?log=error" title="Apache logs"><i class="fas fa-file-lines"></i></a>
+                    </div></td>
+                    <td>{{ site.version }}</td>
+                    <td><span class="wp-muted">Not detected</span></td>
+                    <td><span class="wp-muted">Not tracked</span></td>
+                    <td>{% if site.url and site.url.startswith('https://') and site.is_up %}<span class="wp-status-up">Verified</span>{% elif site.url and site.url.startswith('https://') %}<span class="wp-status-wait">Check failed</span>{% else %}<span style="color:#d28724">Not set</span>{% endif %}</td>
+                    <td>{{ site.response_time_ms if site.response_time_ms is not none else '—' }}{% if site.response_time_ms is not none %} ms{% endif %}<div class="wp-sub">Last: {{ site.last_checked or 'Not checked' }}</div></td>
+                    <td><div class="wp-actions">
+                        {% if site.admin_url %}<a class="wp-button" href="{{ site.admin_url }}" target="_blank" rel="noopener noreferrer">Login</a>{% else %}<span class="wp-muted">No site URL</span>{% endif %}
+                        <a class="wp-button" href="/files?path={{ site.root|urlencode }}">Modify</a>
+                        <a class="wp-button" href="/apache?log=access">Log</a>
+                    </div></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" class="wp-empty">No WordPress installations were detected. Use <b>Add WordPress</b> to install one on a new domain.</td></tr>
+                {% endfor %}
+                <tr id="wp-no-match" hidden><td colspan="10" class="wp-empty">No WordPress sites match this filter.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="wp-note"><i class="fas fa-circle-info"></i> Backup includes the database, wp-content and wp-config.php. Restore, updates, plugin/theme sets, local cloning and remote migrations are not yet implemented; those actions are deliberately unavailable rather than simulated. Backups are stored privately under /var/backups/webpanel/wordpress.</div>
+    </section>
+    {% endif %}
+</div>
+<script>
+(() => {
+    window.openWpDialog = () => {
+        const dialog = document.getElementById('wp-dialog-backdrop');
+        dialog.hidden = false;
+        document.body.style.overflow = 'hidden';
+        document.getElementById('wp-domain').focus();
+    };
+    window.closeWpDialog = () => {
+        document.getElementById('wp-dialog-backdrop').hidden = true;
+        document.body.style.overflow = '';
+    };
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') window.closeWpDialog();
+    });
+    const filter = document.getElementById('wp-filter');
+    const search = document.getElementById('wp-search');
+    if (!filter || !search) return;
+    const rows = [...document.querySelectorAll('#wp-rows tr[data-status]')];
+    const empty = document.getElementById('wp-no-match');
+    function update() {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(row => {
+            const statusMatches = filter.value === 'all'
+                || row.dataset.status === filter.value
+                || (filter.value === 'offline' && row.dataset.status === 'unknown');
+            const show = statusMatches && row.dataset.search.includes(query);
+            row.hidden = !show;
+            if (show) visible += 1;
+        });
+        empty.hidden = visible !== 0 || rows.length === 0;
+    }
+    filter.addEventListener('change', update);
+    search.addEventListener('input', update);
+})();
+</script>
+{% endblock %}

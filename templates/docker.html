@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Docker{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fab fa-docker" style="color:#2496ed;font-size:17px"></i>
+    Docker
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="service-manager">
+    {% if flash %}
+    <div class="service-manager-notice {% if flash.type == 'error' %}service-manager-error{% endif %}">{{ flash.msg }}</div>
+    {% endif %}
+    <section class="service-manager-intro">
+        <div>
+            <h2>Container manager</h2>
+            <p>Inspect, start, stop, restart, and view recent logs for Docker containers.</p>
+        </div>
+        <div class="service-manager-count"><strong>{{ containers|length }}</strong><span>Recent containers</span></div>
+    </section>
+
+    <section class="service-manager-card" style="padding:20px">
+        <div class="service-manager-card-heading">
+            <div class="service-manager-icon docker-icon"><i class="fab fa-docker"></i></div>
+            <div class="service-manager-title">
+                <h3>Docker Engine</h3>
+                <span>{% if docker_installed %}Docker CLI is installed{% else %}Docker CLI is not installed{% endif %}</span>
+            </div>
+            {% if docker_installed %}
+            <div class="service-manager-actions">
+                {% for action in ['start', 'restart', 'stop'] %}
+                <form method="post" action="/docker/service" {% if action == 'stop' %}data-confirm="Stop Docker Engine? This will interrupt every running container."{% endif %}>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <button class="service-action service-action-{{ action }}" type="submit">{{ action|title }} engine</button>
+                </form>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% if not docker_installed %}
+        <p style="margin:12px 0;color:#9ca3af;font-size:13px;line-height:1.6">
+            One-click install uses the configured Debian/Ubuntu package repositories, enables and starts Docker Engine, and installs Compose v2 when the OS repository provides it. No third-party repository is added.
+        </p>
+        {% if not docker_options.supported %}
+        <div class="service-manager-notice service-manager-error">One-click Docker installation supports Debian and Ubuntu only.</div>
+        {% elif docker_options.error %}
+        <div class="service-manager-notice service-manager-error">Could not check the Docker package repository: {{ docker_options.error }}</div>
+        {% elif docker_options.versions %}
+        <form id="docker-install-form" data-version="{{ docker_options.versions[0] }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="service-action service-action-start" id="docker-install-button" {% if install_job.status == 'running' %}disabled{% endif %}>
+                <i class="fab fa-docker"></i>
+                {% if install_job.status == 'running' %}Another package install is running{% else %}Install Docker Engine{% endif %}
+            </button>
+        </form>
+        <p style="margin-top:8px;color:#9ca3af;font-size:12px">Package version: {{ docker_options.versions[0] }}. Installation requires root access and may download system packages.</p>
+        {% else %}
+        <div class="service-manager-notice">No Docker Engine package is available. Update the apt package index or check the configured OS repositories.</div>
+        {% endif %}
+        {% endif %}
+    </section>
+
+    <div class="service-manager-notice">
+        <i class="fas fa-triangle-exclamation"></i>
+        Docker control can affect live applications and has root-equivalent privileges. Only use this panel for containers you administer.
+    </div>
+
+    {% if error %}
+    <div class="service-manager-notice service-manager-error"><i class="fas fa-circle-info"></i>{{ error }}</div>
+    {% elif containers %}
+    <div class="service-manager-grid">
+        {% for container in containers %}
+        <article class="service-manager-card">
+            <div class="service-manager-card-heading">
+                <div class="service-manager-icon docker-icon"><i class="fab fa-docker"></i></div>
+                <div class="service-manager-title">
+                    <h3>{{ container.name or container.id[:12] }}</h3>
+                    <span>{{ container.image }}</span>
+                </div>
+                <span class="service-status {% if (container.status|lower).startswith('up') %}service-status-active{% elif (container.status|lower).startswith('exited') %}service-status-failed{% endif %}">
+                    <span aria-hidden="true"></span>{{ container.status }}
+                </span>
+            </div>
+            <div class="docker-container-meta">
+                <span>ID <code>{{ container.id[:12] }}</code></span>
+                {% if container.ports %}<span>Ports <code>{{ container.ports }}</code></span>{% endif %}
+            </div>
+            <div class="service-manager-actions">
+                {% for action, icon in [('start', 'play'), ('restart', 'rotate'), ('stop', 'stop')] %}
+                <form method="post" action="/docker/action" {% if action == 'stop' %}data-confirm="Stop container {{ container.name or container.id[:12] }}? This will interrupt its application."{% endif %}>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="container_id" value="{{ container.id }}">
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <button class="service-action service-action-{{ action }}" type="submit"><i class="fas fa-{{ icon }}"></i>{{ action|title }}</button>
+                </form>
+                {% endfor %}
+                <a class="service-action docker-logs-link" href="/docker?logs={{ container.id }}">Logs</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% elif not error %}
+    <section class="service-manager-empty">
+        <i class="fab fa-docker"></i>
+        <h3>No containers found</h3>
+        <p>Start Docker and deploy a container to manage it here.</p>
+    </section>
+    {% endif %}
+
+    {% if selected_logs and not error %}
+    <section class="logs-output-card">
+        <div class="logs-output-heading">
+            <strong><i class="fas fa-terminal"></i> Container {{ selected_logs[:12] }} logs</strong>
+            <span>Last 200 lines, max 128 KiB</span>
+        </div>
+        <pre class="logs-output">{% if container_logs %}{{ container_logs }}{% else %}No log output.{% endif %}</pre>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+        if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+    });
+});
+
+const dockerInstallForm = document.getElementById('docker-install-form');
+if (dockerInstallForm) {
+    dockerInstallForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const popup = window.open('about:blank', 'webpanel-install-terminal', 'popup,width=900,height=650');
+        if (!popup) {
+            alert('Allow popups for WebPanel, then try again.');
+            return;
+        }
+        const button = document.getElementById('docker-install-button');
+        button.disabled = true;
+        button.textContent = 'Starting Docker installation...';
+        try {
+            const body = new FormData();
+            body.set('component', 'docker');
+            body.set('version', dockerInstallForm.dataset.version);
+            body.set('csrf_token', dockerInstallForm.elements.csrf_token.value);
+            const response = await fetch('/stack/install', {method: 'POST', body});
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Docker installation could not start.');
+            popup.location = '/stack/terminal?job_id=' + encodeURIComponent(result.job_id);
+            button.textContent = 'Docker installation running...';
+        } catch (error) {
+            popup.document.body.textContent = error.message;
+            button.disabled = false;
+            button.innerHTML = '<i class="fab fa-docker"></i> Install Docker Engine';
+        }
+    });
+}
+</script>
+{% endblock %}

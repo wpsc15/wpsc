@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}New Account{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-user-plus" style="color:#26a65b;font-size:16px"></i>
+    User Management
+</span>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <section class="settings-card">
+        <h3>Create domain-limited account</h3>
+        <p>Restricted users can only access website and server functions for their assigned domain.</p>
+        <form method="post" action="/settings/accounts/create" class="settings-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <label>Username
+                <input type="text" name="username" required minlength="3" maxlength="32" placeholder="new-admin">
+            </label>
+
+            <label>Recovery email
+                <input type="email" name="email" required maxlength="254" placeholder="name@example.com" autocomplete="email">
+            </label>
+
+            <label>Password
+                <input type="password" name="password" required minlength="12" maxlength="72" placeholder="At least 12 characters">
+            </label>
+
+            <label>Confirm password
+                <input type="password" name="confirm_password" required minlength="12" maxlength="72" placeholder="Repeat password">
+            </label>
+
+            <label>Allowed domain
+                <input id="allowed_domains" type="text" name="allowed_domains" placeholder="example.com" pattern="[A-Za-z0-9.-]+\.[A-Za-z]{2,}">
+            </label>
+
+            <label>Access level
+                <select id="role_select" name="role" style="padding:9px 10px;border:1px solid #d9e0e2;border-radius:4px;font:inherit;font-size:12px;background:#fff;color:#24333a;">
+                    <option value="restricted" selected>Restricted to assigned domain</option>
+                    <option value="admin">Full administrator</option>
+                </select>
+            </label>
+
+            <button class="service-action service-action-start" type="submit"><i class="fas fa-user-plus"></i>Create account</button>
+        </form>
+    </section>
+
+    <section class="settings-card">
+        <h3>Existing accounts</h3>
+        <p>Restricted users can only manage pages and services tied to their allowed domain.</p>
+        <div class="audit-table-wrap" style="overflow:auto;margin-top:12px">
+            <table class="audit-table" style="width:100%;border-collapse:collapse;min-width:680px">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;padding:8px 10px;color:#75828b;font-size:10px;text-transform:uppercase">Username</th>
+                        <th style="text-align:left;padding:8px 10px;color:#75828b;font-size:10px;text-transform:uppercase">Recovery email</th>
+                        <th style="text-align:left;padding:8px 10px;color:#75828b;font-size:10px;text-transform:uppercase">Role</th>
+                        <th style="text-align:left;padding:8px 10px;color:#75828b;font-size:10px;text-transform:uppercase">Allowed domain</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr style="border-top:1px solid #edf2f4">
+                        <td style="padding:10px;color:#2f3c42;font-size:12px">{{ account.username }}</td>
+                        <td style="padding:10px;color:#2f3c42;font-size:12px">{{ account.email or 'Not set' }}</td>
+                        <td style="padding:10px;color:#2f3c42;font-size:12px">{{ 'Admin' if account.role == 'admin' else 'Domain limited' }}</td>
+                        <td style="padding:10px;color:#2f3c42;font-size:12px">{{ account.allowed_domains if account.allowed_domains else ('All domains' if account.role == 'admin' else 'Not set') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const roleSelect = document.getElementById('role_select');
+    const allowedDomains = document.getElementById('allowed_domains');
+    function syncAccountRole() {
+        const restricted = roleSelect.value === 'restricted';
+        allowedDomains.required = restricted;
+        allowedDomains.disabled = !restricted;
+        if (!restricted) {
+            allowedDomains.value = '';
+        }
+    }
+    roleSelect.addEventListener('change', syncAccountRole);
+    syncAccountRole();
+</script>
+{% endblock %}

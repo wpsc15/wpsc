@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ config_title }}{% endblock %}
+{% block heading %}
+<span style="display:flex;align-items:center;gap:10px">
+    <i class="fas fa-file-code" style="color:#f97316;font-size:16px"></i>
+    {{ config_title }}
+</span>
+{% endblock %}
+
+{% block content %}
+<div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+            <h3 style="font-size:15px;font-weight:600;color:#f9fafb">{{ config_path }}</h3>
+            <p style="font-size:12px;color:#6b7280;margin-top:2px">Edit the active configuration file. A timestamped backup is created before saving.</p>
+        </div>
+        <a href="/apache" style="text-decoration:none;background:#1f2937;color:#9ca3af;border:1px solid #374151;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:500">
+            <i class="fas fa-arrow-left" style="margin-right:6px"></i>Back to Apache
+        </a>
+    </div>
+    {% if flash %}<div style="padding:12px;margin-bottom:12px;border-radius:6px;background:{% if flash.type == 'error' %}#450a0a{% else %}#064e3b{% endif %};color:{% if flash.type == 'error' %}#fca5a5{% else %}#a7f3d0{% endif %}">{{ flash.msg }}</div>{% endif %}
+    {% if error %}<div style="padding:12px;border-radius:6px;background:#450a0a;color:#fca5a5">{{ error }}</div>
+    {% else %}
+    <div style="padding:12px;margin-bottom:12px;border:1px solid #78350f;border-radius:6px;background:#451a03;color:#fcd34d;font-size:12px;line-height:1.6">
+        <strong>Warning:</strong> This edits a live, root-owned system configuration. Invalid settings can stop websites or Apache. Review changes carefully; saving runs Apache's config test and creates a backup. Reload is attempted only after validation succeeds.
+    </div>
+    <form method="post" action="{{ save_url }}" onsubmit="return confirm('Save this root-level Apache configuration? The panel will validate it and create a backup.');">
+        <textarea name="config" required spellcheck="false" style="width:100%;min-height:65vh;background:#030712;border:1px solid #374151;border-radius:8px;padding:16px;color:#d1d5db;font:12px/1.6 monospace;tab-size:4">{{ config }}</textarea>
+        <button type="submit" style="margin-top:12px;padding:9px 16px;border:0;border-radius:6px;background:#2563eb;color:white;font-weight:600;cursor:pointer">Validate and save</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
