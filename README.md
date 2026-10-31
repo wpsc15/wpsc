@@ -184,30 +184,26 @@ A lightweight, modern web-based hosting control panel for Linux servers designed
 
 ## ⚡ Quick Installation (Linux Server)
 
-### 1. Transfer the release files
-Copy both `install.sh` and `wpsc.tar.gz` to a Linux server with `scp`:
+### Install from GitHub
+The installer supports Linux servers with `systemd`, `tar`, `curl`, and one of `apt-get`, `dnf`, or `yum`. Python 3.10 or newer is required; the installer installs Python and the application dependencies. It installs WebPanel under `/opt/webpanel` and starts it as a `systemd` service. This is a server control panel: install it only on a server you administer and trust.
+
+Download the bootstrap installer and release bundle into the same directory, then run the installer as root:
 ```bash
-scp install.sh wpsc.tar.gz root@your-server-ip:/tmp/
-ssh root@your-server-ip
-cd /tmp
+mkdir -p ~/webpanel-install
+cd ~/webpanel-install
+curl -fL https://raw.githubusercontent.com/wpsc15/wpsc/main/install.sh -o install.sh
+curl -fL https://raw.githubusercontent.com/wpsc15/wpsc/main/wpsc.tar.gz -o wpsc.tar.gz
+sudo bash install.sh
 ```
 
-### 2. Extract and install
-Run the bootstrap installer as root. It extracts `wpsc.tar.gz` to a temporary directory and starts the full installer:
+The bootstrap script extracts `wpsc.tar.gz` into a temporary directory and runs the full installer included in the bundle. You only need to download these two files; `install_webpanel.sh` is already in the archive.
+
+To install from a downloaded GitHub release instead, download its `install.sh` and `wpsc.tar.gz` assets into the same directory and run:
 ```bash
 sudo bash install.sh
 ```
 
-The script will:
-1. Check root access, identify the Linux distribution, and verify that systemd is available.
-2. Install Python 3 and the system prerequisites (Python 3.10 or newer is required).
-3. Deploy the application to `/opt/webpanel` and prepare its virtual environment.
-4. Install the Python dependencies and create the `webpanel.service` systemd service.
-5. Start the service and verify that it is running.
-
-The installer prints the panel URL, default login, and service-management commands when setup completes. Change the default password after signing in, allow TCP port `8080` through your firewall, and configure HTTPS before exposing the panel publicly.
-
-The installer supports Linux servers with systemd and `apt-get`, `dnf`, or `yum`; Python 3.10 or newer is required. The `wpsc.tar.gz` bundle contains the application source, templates, static assets, tests, and setup scripts. It excludes local virtual environments, caches, and the development SQLite database.
+When installation completes, open the printed server URL on port `8080`. The initial login is `admin` / `admin123`; change the password immediately. Allow TCP port `8080` through your firewall as needed, and configure HTTPS before exposing the panel to the public internet. The release bundle excludes local virtual environments, caches, and the development database.
 
 ### Uninstall
 Run this on the installed server:
@@ -215,6 +211,43 @@ Run this on the installed server:
 sudo bash /opt/webpanel/uninstall.sh
 ```
 The uninstaller asks for confirmation, disables the WebPanel service, removes WebPanel-tagged root cron jobs, and deletes `/opt/webpanel` (including its SQLite account/audit data and app-local backups). It leaves system packages, hosted website files and Apache configuration, SSL certificates, MySQL databases, and WordPress backups under `/var/backups/webpanel/wordpress` untouched. To skip the confirmation prompt, use `sudo bash /opt/webpanel/uninstall.sh --yes`.
+
+---
+
+## Contributing
+
+Contributions that fix bugs, improve security, clarify documentation, or add well-tested features are welcome. Please use GitHub Issues to report a problem or discuss a larger change before starting work.
+
+1. Fork the repository on GitHub, then clone your fork:
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/wpsc.git
+   cd wpsc
+   ```
+2. Create a focused branch:
+   ```bash
+   git switch -c fix/short-description
+   ```
+3. Set up a development environment and run the test suite:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   python -m pip install -r requirements.txt pytest
+   python -m pytest -q
+   ```
+4. Make and test your change, then commit and push it to your fork:
+   ```bash
+   git add .
+   git commit -m "Describe the change"
+   git push -u origin fix/short-description
+   ```
+5. Open a pull request from your branch to `wpsc15/wpsc`'s `main` branch. Explain the problem and solution, include relevant test results, and mention any installation or security impact.
+
+Keep pull requests focused, avoid including secrets, server data, `.venv`, or `webpanel.db`, and add or update tests when behavior changes. Be respectful and constructive in issues and reviews; maintainers will review contributions as time permits.
+
+### License
+
+The repository is publicly viewable, but it does not currently include a `LICENSE` file. Public visibility alone does not grant permission to redistribute or reuse the code. A project maintainer should add an explicit license before the project is described as open source.
+
 
 ---
 
