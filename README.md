@@ -240,7 +240,7 @@ Contributions that fix bugs, improve security, clarify documentation, or add wel
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   python -m pip install -r requirements.txt pytest
+   python -m pip install -r requirements.txt pytest httpx
    python -m pytest -q
    ```
 4. Make and test your change, then commit and push it to your fork:
