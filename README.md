@@ -1,6 +1,6 @@
 # 🌐 WebPanel — Linux Web Hosting Control Panel
 
-A lightweight, modern web-based hosting control panel for Linux servers built for Linux server management. Built with **FastAPI**, **Alpine.js**, **Tailwind CSS**, and **Chart.js** to manage **Apache**, **MySQL / MariaDB**, **PHP**, and **phpMyAdmin** directly through a browser.
+A lightweight, modern web-based control panel for managing Linux hosting servers. Built with **FastAPI**, **Alpine.js**, **Tailwind CSS**, and **Chart.js** to manage **Apache**, **MySQL / MariaDB**, **PHP**, and **phpMyAdmin** directly through a browser.
 
 ---
 
